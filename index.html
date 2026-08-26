@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>21家分销商库存预警看板</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;background:#eef2f6;color:#1f2937}
+  .wrap{max-width:1560px;margin:0 auto;padding:16px}
+  .header{background:linear-gradient(135deg,#0f3d5c,#1d6fa5);color:#fff;border-radius:12px;padding:18px 24px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 8px rgba(15,61,92,.2)}
+  .header h1{font-size:22px;letter-spacing:1px}
+  .header .sub{font-size:12px;opacity:.85;margin-top:3px}
+  .header .meta{text-align:right;font-size:12px;opacity:.9;line-height:1.6}
+  .cards{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:14px}
+  .card{background:#fff;border-radius:10px;padding:12px 16px;box-shadow:0 1px 3px rgba(0,0,0,.06);border-left:5px solid #e5e7eb}
+  .card .v{font-size:24px;font-weight:800;line-height:1.1}
+  .card .l{font-size:11px;color:#6b7280;margin-top:3px}
+  .card.red{border-color:#ef4444}.card.red .v{color:#dc2626}
+  .card.amber{border-color:#f59e0b}.card.amber .v{color:#d97706}
+  .card.blue{border-color:#3b82f6}.card.blue .v{color:#2563eb}
+  .card.green{border-color:#10b981}.card.green .v{color:#059669}
+  .box{background:#fff;border-radius:10px;padding:14px 18px;box-shadow:0 1px 3px rgba(0,0,0,.06);margin-bottom:14px}
+  .box h2{font-size:15px;color:#111827;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+  .box h2 .tag{font-size:11px;background:#f0f2f5;color:#6b7280;border-radius:4px;padding:2px 8px;font-weight:500}
+  /* 矩阵 */
+  .matrix{overflow-x:auto}
+  table{border-collapse:collapse;width:100%}
+  .matrix th,.matrix td{border:1px solid #eef2f7;padding:7px 6px;text-align:center;white-space:nowrap}
+  .matrix th{background:#f8fafc;color:#6b7280;font-weight:600;font-size:12px}
+  .matrix th.rowhead,.matrix td.rowhead{text-align:left;font-weight:700;font-size:13px;padding-left:10px;background:#f1f5f9;color:#111827}
+  .matrix th.tot,.matrix td.tot{background:#f8fafc}
+  td.na{color:#d1d5db;font-size:12px}
+  .cell{display:inline-block;padding:4px 10px;border-radius:5px;font-weight:700;font-size:13px;min-width:52px}
+  .cell.ok{background:#ecfdf5;color:#047857}
+  .cell.warn2{background:#fef9c3;color:#a16207}
+  .cell.empty{background:#fee2e2;color:#dc2626}
+  .cell.big{font-size:18px;padding:6px 12px}
+  .cell .wk{font-style:normal;font-weight:600;font-size:10px;margin-left:3px;color:#dc2626;background:#fff;border-radius:3px;padding:0 4px}
+  td.tot.red b{color:#dc2626}
+  /* 分类预警 */
+  .cat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px}
+  .cata{border:1px solid #eef2f7;border-radius:8px;padding:10px 12px}
+  .cata.warn{border-color:#fca5a5;background:#fff7f7}
+  .cata-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+  .cata-h b{font-size:14px}
+  .cata-n{font-size:11px;color:#6b7280}
+  .cata-list{display:flex;flex-wrap:wrap;gap:5px}
+  .chip{font-size:10px;border-radius:4px;padding:2px 6px}
+  .chip-0{background:#fee2e2;color:#dc2626;font-weight:600}
+  .chip-l{background:#fef3c7;color:#d97706}
+  .more{font-size:10px;color:#9ca3af}
+  .ok-txt{font-size:12px;color:#059669;font-weight:600}
+  /* 分销商详情 */
+  .distcard{border:1px solid #eef2f7;border-radius:10px;padding:12px 14px;margin-bottom:12px}
+  .dc-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+  .dc-head b{font-size:15px}
+  .dc-meta{font-size:12px;color:#6b7280}
+  .dc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-bottom:10px}
+  .dc{border:1px solid #eef2f7;border-radius:8px;padding:8px 10px;display:flex;flex-direction:column;gap:2px}
+  .dc-t{font-size:11px;color:#6b7280}
+  .dc b{font-size:16px}
+  .dc-s{font-size:10px;color:#9ca3af}
+  .st-0{font-size:10px;font-weight:700;color:#dc2626}
+  .st-l{font-size:10px;font-weight:700;color:#d97706}
+  .st-ok{font-size:10px;font-weight:600;color:#059669}
+  .na2{font-size:10px;color:#d1d5db}
+  .trend-place{font-size:12px;color:#9ca3af;background:#f8fafc;border-radius:6px;padding:8px 12px;border:1px dashed #e5e7eb}
+  .legend{font-size:11px;color:#6b7280;margin-top:8px;display:flex;gap:14px;flex-wrap:wrap}
+  .legend .sw{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:3px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <div>
+      <h1>21家分销商库存预警看板</h1>
+      <div class="sub">缺货/库存低预警 · 按品类分类预警 · 数据周更</div>
+    </div>
+    <div class="meta">数据周期：<b>2026.08 本周</b><br>21 家分销商 · 80 型号</div>
+  </div>
+
+  <div class="cards">
+    <div class="card blue"><div class="v">21</div><div class="l">接入分销商</div></div>
+    <div class="card red"><div class="v">9</div><div class="l">🚨 缺货型号</div></div>
+    <div class="card amber"><div class="v">45</div><div class="l">⚡ 库存低 &lt;2周</div></div>
+    <div class="card green"><div class="v">13,163</div><div class="l">📈 本周销售(件)</div></div>
+    <div class="card blue"><div class="v">156,280</div><div class="l">📦 总库存(件)</div></div>
+  </div>
+
+  <div class="box">
+    <h2>🗺️ 分销商 × 品类 库存矩阵 <span class="tag">左列=分销商 · 右列=品类 · 缺货格子加大标红</span></h2>
+    <div class="matrix"><table><thead><tr><th class="rowhead">分销商</th><th>U盘</th><th>移动硬盘</th><th>TF</th><th>SD</th><th>硬盘盒</th><th class="tot">总库存</th><th class="tot">缺货</th></tr></thead><tbody><tr><td class="rowhead">塔城科技</td><td><span class="cell empty big">920<i class="wk">缺2</i></span></td><td class="na">—</td><td><span class="cell empty big">5,345<i class="wk">缺1</i></span></td><td><span class="cell empty big">421<i class="wk">缺1</i></span></td><td><span class="cell empty big">11<i class="wk">缺1</i></span></td><td class="tot"><b>6,697</b></td><td class="tot red"><b>5</b></td></tr><tr><td class="rowhead">沈阳拓展</td><td><span class="cell ok">1,298</span></td><td><span class="cell ok">56</span></td><td><span class="cell ok">1,526</span></td><td><span class="cell ok">1,533</span></td><td><span class="cell warn2">20</span></td><td class="tot"><b>4,433</b></td><td class="tot ">—</td></tr><tr><td class="rowhead">沈阳新明天</td><td><span class="cell ok">1,602</span></td><td><span class="cell warn2">5</span></td><td><span class="cell ok">1,969</span></td><td class="na">—</td><td class="na">—</td><td class="tot"><b>3,576</b></td><td class="tot ">—</td></tr><tr><td class="rowhead">深圳旺源</td><td><span class="cell ok">4,409</span></td><td><span class="cell ok">130</span></td><td><span class="cell ok">24,490</span></td><td><span class="cell ok">2,929</span></td><td><span class="cell warn2">20</span></td><td class="tot"><b>31,978</b></td><td class="tot ">—</td></tr><tr><td class="rowhead">多义德</td><td><span class="cell ok">2,615</span></td><td><span class="cell ok">50</span></td><td><span class="cell ok">3,109</span></td><td><span class="cell ok">2,292</span></td><td class="na">—</td><td class="tot"><b>8,066</b></td><td class="tot ">—</td></tr><tr><td class="rowhead">新疆方联</td><td><span class="cell ok">724</span></td><td><span class="cell warn2">41</span></td><td><span class="cell ok">776</span></td><td><span class="cell ok">519</span></td><td><span class="cell warn2">11</span></td><td class="tot"><b>2,071</b></td><td class="tot ">—</td></tr><tr><td class="rowhead">甘肃百恩</td><td><span class="cell ok">1,715</span></td><td><span class="cell warn2">9</span></td><td><span class="cell ok">755</span></td><td><span class="cell ok">949</span></td><td><span class="cell warn2">6</span></td><td class="tot"><b>3,434</b></td><td class="tot ">—</td></tr><tr><td class="rowhead">河南自营</td><td><span class="cell ok">1,252</span></td><td><span class="cell empty big">45<i class="wk">缺1</i></span></td><td><span class="cell ok">4,701</span></td><td><span class="cell ok">1,972</span></td><td><span class="cell warn2">5</span></td><td class="tot"><b>7,975</b></td><td class="tot red"><b>1</b></td></tr><tr><td class="rowhead">一路友你</td><td><span class="cell ok">185</span></td><td><span class="cell ok">50</span></td><td><span class="cell ok">1,535</span></td><td><span class="cell ok">771</span></td><td><span class="cell ok">71</span></td><td class="tot"><b>2,612</b></td><td class="tot ">—</td></tr><tr><td class="rowhead">石家庄路加</td><td><span class="cell empty big">243.2<i class="wk">缺1</i></span></td><td><span class="cell ok">55</span></td><td><span class="cell ok">1,825</span></td><td><span class="cell ok">524</span></td><td><span class="cell warn2">25</span></td><td class="tot"><b>2672.2</b></td><td class="tot red"><b>1</b></td></tr><tr><td class="rowhead">南京鑫蒙华</td><td><span class="cell ok">3,604</span></td><td><span class="cell warn2">36</span></td><td><span class="cell ok">5,556</span></td><td><span class="cell ok">1,941</span></td><td><span class="cell ok">63</span></td><td class="tot"><b>11,200</b></td><td class="tot ">—</td></tr><tr><td class="rowhead">合肥易芯邦</td><td><span class="cell ok">2,478</span></td><td><span class="cell ok">105</span></td><td><span class="cell ok">6,966</span></td><td><span class="cell ok">447</span></td><td><span class="cell warn2">20</span></td><td class="tot"><b>10,016</b></td><td class="tot ">—</td></tr><tr><td class="rowhead">成都锦鑫</td><td><span class="cell ok">1,518</span></td><td><span class="cell warn2">9</span></td><td><span class="cell ok">1,055</span></td><td><span class="cell ok">1,763</span></td><td class="na">—</td><td class="tot"><b>4,345</b></td><td class="tot ">—</td></tr><tr><td class="rowhead">杭州赛畅</td><td><span class="cell ok">1,655</span></td><td><span class="cell warn2">32</span></td><td><span class="cell ok">8,691</span></td><td><span class="cell ok">1,207</span></td><td class="na">—</td><td class="tot"><b>11,585</b></td><td class="tot ">—</td></tr><tr><td class="rowhead">重庆卡德</td><td><span class="cell ok">2,671</span></td><td><span class="cell empty big">71<i class="wk">缺2</i></span></td><td><span class="cell ok">1,811</span></td><td><span class="cell ok">472</span></td><td class="na">—</td><td class="tot"><b>5,025</b></td><td class="tot red"><b>2</b></td></tr><tr><td class="rowhead">华林</td><td><span class="cell ok">648</span></td><td class="na">—</td><td><span class="cell ok">15,202</span></td><td><span class="cell ok">717</span></td><td class="na">—</td><td class="tot"><b>16,567</b></td><td class="tot ">—</td></tr><tr><td class="rowhead">金马士</td><td><span class="cell ok">10,883</span></td><td class="na">—</td><td class="na">—</td><td class="na">—</td><td class="na">—</td><td class="tot"><b>10,883</b></td><td class="tot ">—</td></tr><tr><td class="rowhead">鑫天润</td><td><span class="cell ok">2,422</span></td><td><span class="cell warn2">25</span></td><td><span class="cell ok">1,291</span></td><td><span class="cell ok">733</span></td><td><span class="cell warn2">13</span></td><td class="tot"><b>4,484</b></td><td class="tot ">—</td></tr><tr><td class="rowhead">贵州新正</td><td><span class="cell ok">950</span></td><td><span class="cell warn2">14</span></td><td><span class="cell ok">139</span></td><td><span class="cell ok">410</span></td><td><span class="cell ok">50</span></td><td class="tot"><b>1,563</b></td><td class="tot ">—</td></tr><tr><td class="rowhead">长春瑞拓</td><td><span class="cell ok">1,903</span></td><td><span class="cell ok">80</span></td><td><span class="cell ok">1,940</span></td><td><span class="cell ok">1,272</span></td><td class="na">—</td><td class="tot"><b>5,195</b></td><td class="tot ">—</td></tr><tr><td class="rowhead">长沙正森</td><td><span class="cell ok">677</span></td><td><span class="cell warn2">5</span></td><td><span class="cell ok">688</span></td><td><span class="cell ok">520</span></td><td><span class="cell warn2">13</span></td><td class="tot"><b>1,903</b></td><td class="tot ">—</td></tr></tbody></table></div>
+    <div class="legend">
+      <span><span class="sw" style="background:#fee2e2"></span>缺货</span>
+      <span><span class="sw" style="background:#fef9c3"></span>&lt;50 偏低</span>
+      <span><span class="sw" style="background:#ecfdf5"></span>正常</span>
+      <span><span class="sw" style="background:#fff;border:1px solid #e5e7eb"></span>未经营</span>
+    </div>
+  </div>
+
+  <div class="box">
+    <h2>🚨 按品类预警 <span class="tag">缺货 &lt;低 型号，按品类分类</span></h2>
+    <div class="cat-grid">
+    <div class="cata warn">
+      <div class="cata-h"><b>U盘</b>
+        <span class="cata-n">缺货 3 · 低 14 · 共17</span>
+      </div>
+      <div class="cata-list"><span class="chip chip-0">塔城科技·LJDV400128G-BNBNC</span><span class="chip chip-l">塔城科技·LJDS080128G-BNBNC(1周)</span><span class="chip chip-0">塔城科技·LJDD500512G-BNQNG</span><span class="chip chip-l">深圳旺源·LJDD400256G-BNQNC(0.9周)</span><span class="chip chip-0">石家庄路加·LJDV400032G-BNBNC</span><span class="chip chip-l">石家庄路加·LJDV400064G-BNBNC(0.7周)</span><span class="chip chip-l">石家庄路加·LJDV400128G-BNBNC(0.9周)</span><span class="chip chip-l">石家庄路加·LJDD300032G-BNBNG(0.1周)</span><span class="chip chip-l">石家庄路加·LJDD300064G-BNBNG(0.2周)</span><span class="chip chip-l">石家庄路加·LJDD300128G-BNBNG(0.6周)</span><span class="chip chip-l">石家庄路加·LJDD400064G-BNQNC(0.8周)</span><span class="chip chip-l">石家庄路加·LJDD400256G-BNQNC(0.2周)</span><span class="more">+5</span></div>
+    </div>
+    <div class="cata warn">
+      <div class="cata-h"><b>移动硬盘</b>
+        <span class="cata-n">缺货 3 · 低 2 · 共5</span>
+      </div>
+      <div class="cata-list"><span class="chip chip-0">河南自营·LAR700X004T-RNBNG</span><span class="chip chip-l">河南自营·LSL300001T-RNBNG(0.8周)</span><span class="chip chip-l">石家庄路加·LSL300001T-RNBNG(0.2周)</span><span class="chip chip-0">重庆卡德·LSL500M001T-RNBNG</span><span class="chip chip-0">重庆卡德·LSL500M002T-RNBNG</span></div>
+    </div>
+    <div class="cata warn">
+      <div class="cata-h"><b>TF</b>
+        <span class="cata-n">缺货 1 · 低 9 · 共10</span>
+      </div>
+      <div class="cata-list"><span class="chip chip-l">塔城科技·LSDMI32GBBCN633N(1周)</span><span class="chip chip-l">塔城科技·LSDMI64GBBCN633N(0.3周)</span><span class="chip chip-l">塔城科技·LMSXPS0512G-BNNNG(0.6周)</span><span class="chip chip-0">塔城科技·LMSXPS0001T-BNNNG</span><span class="chip chip-l">石家庄路加·LSDMI32GBBCN633N(0.2周)</span><span class="chip chip-l">石家庄路加·LSDMI64GBBCN633N(0.4周)</span><span class="chip chip-l">石家庄路加·LSDMI128BBCN633N(0.7周)</span><span class="chip chip-l">石家庄路加·LMSSIPL064G-BNANC(1.3周)</span><span class="chip chip-l">石家庄路加·LMSSIPL128G-BNANC(0.6周)</span><span class="chip chip-l">成都锦鑫·LMSSIPL064G-BNANC(1.4周)</span></div>
+    </div>
+    <div class="cata warn">
+      <div class="cata-h"><b>SD</b>
+        <span class="cata-n">缺货 1 · 低 9 · 共10</span>
+      </div>
+      <div class="cata-list"><span class="chip chip-0">塔城科技·LSD1800128G-RNNNC</span><span class="chip chip-l">河南自营·LSD0800P032G-BNNNC(1.8周)</span><span class="chip chip-l">河南自营·LSD0800P064G-BNNNC(1.9周)</span><span class="chip chip-l">河南自营·LSD1800128G-RNNNC(1.7周)</span><span class="chip chip-l">河南自营·LSD1800256G-RNNNC(0.2周)</span><span class="chip chip-l">石家庄路加·LSD0800P032G-BNNNC(0.4周)</span><span class="chip chip-l">石家庄路加·LSD0800P064G-BNNNC(0.8周)</span><span class="chip chip-l">石家庄路加·LSD0800P128G-BNNNC(1.1周)</span><span class="chip chip-l">石家庄路加·LSD1800512G-RNNNC(0.9周)</span><span class="chip chip-l">成都锦鑫·LSDSIPL512G-RNNNC(1周)</span></div>
+    </div>
+    <div class="cata warn">
+      <div class="cata-h"><b>硬盘盒</b>
+        <span class="cata-n">缺货 1 · 低 2 · 共3</span>
+      </div>
+      <div class="cata-list"><span class="chip chip-0">塔城科技·LPAE300-RNGNC</span><span class="chip chip-l">塔城科技·LPAE350-RNGNC(1.2周)</span><span class="chip chip-l">石家庄路加·LPAE350-RNGNC(1.7周)</span></div>
+    </div></div>
+  </div>
+
+  <div class="box">
+    <h2>🏢 各分销商明细 <span class="tag">每家的品类库存 + 趋势区</span></h2>
+    <div class="distcard">
+      <div class="dc-head"><b>塔城科技</b><span class="dc-meta">总库存 6,697 · 缺货 5 · 本周销 8,446</span></div>
+      <div class="dc-grid"><div class="dc"><span class="dc-t">U盘</span><b>920</b><span class="st-0">缺2</span><span class="dc-s">SKU 10</span></div><div class="dc"><span class="dc-t">移动硬盘</span><span class="na2">未经营</span></div><div class="dc"><span class="dc-t">TF</span><b>5,345</b><span class="st-0">缺1</span><span class="dc-s">SKU 11</span></div><div class="dc"><span class="dc-t">SD</span><b>421</b><span class="st-0">缺1</span><span class="dc-s">SKU 4</span></div><div class="dc"><span class="dc-t">硬盘盒</span><b>11</b><span class="st-0">缺1</span><span class="dc-s">SKU 2</span></div></div>
+      <div class="trend-place" data-dist="塔城科技">📈 库存趋势：待积累历史数据（≥2期显示）</div>
+    </div><div class="distcard">
+      <div class="dc-head"><b>沈阳拓展</b><span class="dc-meta">总库存 4,433 · 缺货 0 · 本周销 0</span></div>
+      <div class="dc-grid"><div class="dc"><span class="dc-t">U盘</span><b>1,298</b><span class="st-ok">正常</span><span class="dc-s">SKU 20</span></div><div class="dc"><span class="dc-t">移动硬盘</span><b>56</b><span class="st-ok">正常</span><span class="dc-s">SKU 7</span></div><div class="dc"><span class="dc-t">TF</span><b>1,526</b><span class="st-ok">正常</span><span class="dc-s">SKU 13</span></div><div class="dc"><span class="dc-t">SD</span><b>1,533</b><span class="st-ok">正常</span><span class="dc-s">SKU 12</span></div><div class="dc"><span class="dc-t">硬盘盒</span><b>20</b><span class="st-l">低</span><span class="dc-s">SKU 3</span></div></div>
+      <div class="trend-place" data-dist="沈阳拓展">📈 库存趋势：待积累历史数据（≥2期显示）</div>
+    </div><div class="distcard">
+      <div class="dc-head"><b>沈阳新明天</b><span class="dc-meta">总库存 3,576 · 缺货 0 · 本周销 0</span></div>
+      <div class="dc-grid"><div class="dc"><span class="dc-t">U盘</span><b>1,602</b><span class="st-ok">正常</span><span class="dc-s">SKU 8</span></div><div class="dc"><span class="dc-t">移动硬盘</span><b>5</b><span class="st-l">低</span><span class="dc-s">SKU 2</span></div><div class="dc"><span class="dc-t">TF</span><b>1,969</b><span class="st-ok">正常</span><span class="dc-s">SKU 3</span></div><div class="dc"><span class="dc-t">SD</span><span class="na2">未经营</span></div><div class="dc"><span class="dc-t">硬盘盒</span><span class="na2">未经营</span></div></div>
+      <div class="trend-place" data-dist="沈阳新明天">📈 库存趋势：待积累历史数据（≥2期显示）</div>
+    </div><div class="distcard">
+      <div class="dc-head"><b>深圳旺源</b><span class="dc-meta">总库存 31,978 · 缺货 0 · 本周销 250</span></div>
+      <div class="dc-grid"><div class="dc"><span class="dc-t">U盘</span><b>4,409</b><span class="st-ok">正常</span><span class="dc-s">SKU 13</span></div><div class="dc"><span class="dc-t">移动硬盘</span><b>130</b><span class="st-ok">正常</span><span class="dc-s">SKU 7</span></div><div class="dc"><span class="dc-t">TF</span><b>24,490</b><span class="st-ok">正常</span><span class="dc-s">SKU 12</span></div><div class="dc"><span class="dc-t">SD</span><b>2,929</b><span class="st-ok">正常</span><span class="dc-s">SKU 12</span></div><div class="dc"><span class="dc-t">硬盘盒</span><b>20</b><span class="st-l">低</span><span class="dc-s">SKU 2</span></div></div>
+      <div class="trend-place" data-dist="深圳旺源">📈 库存趋势：待积累历史数据（≥2期显示）</div>
+    </div><div class="distcard">
+      <div class="dc-head"><b>多义德</b><span class="dc-meta">总库存 8,066 · 缺货 0 · 本周销 0</span></div>
+      <div class="dc-grid"><div class="dc"><span class="dc-t">U盘</span><b>2,615</b><span class="st-ok">正常</span><span class="dc-s">SKU 29</span></div><div class="dc"><span class="dc-t">移动硬盘</span><b>50</b><span class="st-ok">正常</span><span class="dc-s">SKU 9</span></div><div class="dc"><span class="dc-t">TF</span><b>3,109</b><span class="st-ok">正常</span><span class="dc-s">SKU 11</span></div><div class="dc"><span class="dc-t">SD</span><b>2,292</b><span class="st-ok">正常</span><span class="dc-s">SKU 14</span></div><div class="dc"><span class="dc-t">硬盘盒</span><span class="na2">未经营</span></div></div>
+      <div class="trend-place" data-dist="多义德">📈 库存趋势：待积累历史数据（≥2期显示）</div>
+    </div><div class="distcard">
+      <div class="dc-head"><b>新疆方联</b><span class="dc-meta">总库存 2,071 · 缺货 0 · 本周销 0</span></div>
+      <div class="dc-grid"><div class="dc"><span class="dc-t">U盘</span><b>724</b><span class="st-ok">正常</span><span class="dc-s">SKU 10</span></div><div class="dc"><span class="dc-t">移动硬盘</span><b>41</b><span class="st-l">低</span><span class="dc-s">SKU 3</span></div><div class="dc"><span class="dc-t">TF</span><b>776</b><span class="st-ok">正常</span><span class="dc-s">SKU 9</span></div><div class="dc"><span class="dc-t">SD</span><b>519</b><span class="st-ok">正常</span><span class="dc-s">SKU 11</span></div><div class="dc"><span class="dc-t">硬盘盒</span><b>11</b><span class="st-l">低</span><span class="dc-s">SKU 1</span></div></div>
+      <div class="trend-place" data-dist="新疆方联">📈 库存趋势：待积累历史数据（≥2期显示）</div>
+    </div><div class="distcard">
+      <div class="dc-head"><b>甘肃百恩</b><span class="dc-meta">总库存 3,434 · 缺货 0 · 本周销 0</span></div>
+      <div class="dc-grid"><div class="dc"><span class="dc-t">U盘</span><b>1,715</b><span class="st-ok">正常</span><span class="dc-s">SKU 19</span></div><div class="dc"><span class="dc-t">移动硬盘</span><b>9</b><span class="st-l">低</span><span class="dc-s">SKU 4</span></div><div class="dc"><span class="dc-t">TF</span><b>755</b><span class="st-ok">正常</span><span class="dc-s">SKU 8</span></div><div class="dc"><span class="dc-t">SD</span><b>949</b><span class="st-ok">正常</span><span class="dc-s">SKU 12</span></div><div class="dc"><span class="dc-t">硬盘盒</span><b>6</b><span class="st-l">低</span><span class="dc-s">SKU 1</span></div></div>
+      <div class="trend-place" data-dist="甘肃百恩">📈 库存趋势：待积累历史数据（≥2期显示）</div>
+    </div><div class="distcard">
+      <div class="dc-head"><b>河南自营</b><span class="dc-meta">总库存 7,975 · 缺货 1 · 本周销 1,014</span></div>
+      <div class="dc-grid"><div class="dc"><span class="dc-t">U盘</span><b>1,252</b><span class="st-ok">正常</span><span class="dc-s">SKU 10</span></div><div class="dc"><span class="dc-t">移动硬盘</span><b>45</b><span class="st-0">缺1</span><span class="dc-s">SKU 11</span></div><div class="dc"><span class="dc-t">TF</span><b>4,701</b><span class="st-ok">正常</span><span class="dc-s">SKU 14</span></div><div class="dc"><span class="dc-t">SD</span><b>1,972</b><span class="st-ok">正常</span><span class="dc-s">SKU 14</span></div><div class="dc"><span class="dc-t">硬盘盒</span><b>5</b><span class="st-l">低</span><span class="dc-s">SKU 1</span></div></div>
+      <div class="trend-place" data-dist="河南自营">📈 库存趋势：待积累历史数据（≥2期显示）</div>
+    </div><div class="distcard">
+      <div class="dc-head"><b>一路友你</b><span class="dc-meta">总库存 2,612 · 缺货 0 · 本周销 0</span></div>
+      <div class="dc-grid"><div class="dc"><span class="dc-t">U盘</span><b>185</b><span class="st-ok">正常</span><span class="dc-s">SKU 9</span></div><div class="dc"><span class="dc-t">移动硬盘</span><b>50</b><span class="st-ok">正常</span><span class="dc-s">SKU 8</span></div><div class="dc"><span class="dc-t">TF</span><b>1,535</b><span class="st-ok">正常</span><span class="dc-s">SKU 12</span></div><div class="dc"><span class="dc-t">SD</span><b>771</b><span class="st-ok">正常</span><span class="dc-s">SKU 12</span></div><div class="dc"><span class="dc-t">硬盘盒</span><b>71</b><span class="st-ok">正常</span><span class="dc-s">SKU 4</span></div></div>
+      <div class="trend-place" data-dist="一路友你">📈 库存趋势：待积累历史数据（≥2期显示）</div>
+    </div><div class="distcard">
+      <div class="dc-head"><b>石家庄路加</b><span class="dc-meta">总库存 2672.2 · 缺货 1 · 本周销 2,129</span></div>
+      <div class="dc-grid"><div class="dc"><span class="dc-t">U盘</span><b>243.2</b><span class="st-0">缺1</span><span class="dc-s">SKU 18</span></div><div class="dc"><span class="dc-t">移动硬盘</span><b>55</b><span class="st-ok">正常</span><span class="dc-s">SKU 4</span></div><div class="dc"><span class="dc-t">TF</span><b>1,825</b><span class="st-ok">正常</span><span class="dc-s">SKU 13</span></div><div class="dc"><span class="dc-t">SD</span><b>524</b><span class="st-ok">正常</span><span class="dc-s">SKU 9</span></div><div class="dc"><span class="dc-t">硬盘盒</span><b>25</b><span class="st-l">低</span><span class="dc-s">SKU 1</span></div></div>
+      <div class="trend-place" data-dist="石家庄路加">📈 库存趋势：待积累历史数据（≥2期显示）</div>
+    </div><div class="distcard">
+      <div class="dc-head"><b>南京鑫蒙华</b><span class="dc-meta">总库存 11,200 · 缺货 0 · 本周销 255</span></div>
+      <div class="dc-grid"><div class="dc"><span class="dc-t">U盘</span><b>3,604</b><span class="st-ok">正常</span><span class="dc-s">SKU 14</span></div><div class="dc"><span class="dc-t">移动硬盘</span><b>36</b><span class="st-l">低</span><span class="dc-s">SKU 6</span></div><div class="dc"><span class="dc-t">TF</span><b>5,556</b><span class="st-ok">正常</span><span class="dc-s">SKU 11</span></div><div class="dc"><span class="dc-t">SD</span><b>1,941</b><span class="st-ok">正常</span><span class="dc-s">SKU 12</span></div><div class="dc"><span class="dc-t">硬盘盒</span><b>63</b><span class="st-ok">正常</span><span class="dc-s">SKU 4</span></div></div>
+      <div class="trend-place" data-dist="南京鑫蒙华">📈 库存趋势：待积累历史数据（≥2期显示）</div>
+    </div><div class="distcard">
+      <div class="dc-head"><b>合肥易芯邦</b><span class="dc-meta">总库存 10,016 · 缺货 0 · 本周销 0</span></div>
+      <div class="dc-grid"><div class="dc"><span class="dc-t">U盘</span><b>2,478</b><span class="st-ok">正常</span><span class="dc-s">SKU 12</span></div><div class="dc"><span class="dc-t">移动硬盘</span><b>105</b><span class="st-ok">正常</span><span class="dc-s">SKU 2</span></div><div class="dc"><span class="dc-t">TF</span><b>6,966</b><span class="st-ok">正常</span><span class="dc-s">SKU 8</span></div><div class="dc"><span class="dc-t">SD</span><b>447</b><span class="st-ok">正常</span><span class="dc-s">SKU 9</span></div><div class="dc"><span class="dc-t">硬盘盒</span><b>20</b><span class="st-l">低</span><span class="dc-s">SKU 2</span></div></div>
+      <div class="trend-place" data-dist="合肥易芯邦">📈 库存趋势：待积累历史数据（≥2期显示）</div>
+    </div><div class="distcard">
+      <div class="dc-head"><b>成都锦鑫</b><span class="dc-meta">总库存 4,345 · 缺货 0 · 本周销 234</span></div>
+      <div class="dc-grid"><div class="dc"><span class="dc-t">U盘</span><b>1,518</b><span class="st-ok">正常</span><span class="dc-s">SKU 16</span></div><div class="dc"><span class="dc-t">移动硬盘</span><b>9</b><span class="st-l">低</span><span class="dc-s">SKU 3</span></div><div class="dc"><span class="dc-t">TF</span><b>1,055</b><span class="st-ok">正常</span><span class="dc-s">SKU 10</span></div><div class="dc"><span class="dc-t">SD</span><b>1,763</b><span class="st-ok">正常</span><span class="dc-s">SKU 13</span></div><div class="dc"><span class="dc-t">硬盘盒</span><span class="na2">未经营</span></div></div>
+      <div class="trend-place" data-dist="成都锦鑫">📈 库存趋势：待积累历史数据（≥2期显示）</div>
+    </div><div class="distcard">
+      <div class="dc-head"><b>杭州赛畅</b><span class="dc-meta">总库存 11,585 · 缺货 0 · 本周销 0</span></div>
+      <div class="dc-grid"><div class="dc"><span class="dc-t">U盘</span><b>1,655</b><span class="st-ok">正常</span><span class="dc-s">SKU 13</span></div><div class="dc"><span class="dc-t">移动硬盘</span><b>32</b><span class="st-l">低</span><span class="dc-s">SKU 4</span></div><div class="dc"><span class="dc-t">TF</span><b>8,691</b><span class="st-ok">正常</span><span class="dc-s">SKU 9</span></div><div class="dc"><span class="dc-t">SD</span><b>1,207</b><span class="st-ok">正常</span><span class="dc-s">SKU 11</span></div><div class="dc"><span class="dc-t">硬盘盒</span><span class="na2">未经营</span></div></div>
+      <div class="trend-place" data-dist="杭州赛畅">📈 库存趋势：待积累历史数据（≥2期显示）</div>
+    </div><div class="distcard">
+      <div class="dc-head"><b>重庆卡德</b><span class="dc-meta">总库存 5,025 · 缺货 2 · 本周销 242</span></div>
+      <div class="dc-grid"><div class="dc"><span class="dc-t">U盘</span><b>2,671</b><span class="st-ok">正常</span><span class="dc-s">SKU 22</span></div><div class="dc"><span class="dc-t">移动硬盘</span><b>71</b><span class="st-0">缺2</span><span class="dc-s">SKU 5</span></div><div class="dc"><span class="dc-t">TF</span><b>1,811</b><span class="st-ok">正常</span><span class="dc-s">SKU 7</span></div><div class="dc"><span class="dc-t">SD</span><b>472</b><span class="st-ok">正常</span><span class="dc-s">SKU 10</span></div><div class="dc"><span class="dc-t">硬盘盒</span><span class="na2">未经营</span></div></div>
+      <div class="trend-place" data-dist="重庆卡德">📈 库存趋势：待积累历史数据（≥2期显示）</div>
+    </div><div class="distcard">
+      <div class="dc-head"><b>华林</b><span class="dc-meta">总库存 16,567 · 缺货 0 · 本周销 168</span></div>
+      <div class="dc-grid"><div class="dc"><span class="dc-t">U盘</span><b>648</b><span class="st-ok">正常</span><span class="dc-s">SKU 3</span></div><div class="dc"><span class="dc-t">移动硬盘</span><span class="na2">未经营</span></div><div class="dc"><span class="dc-t">TF</span><b>15,202</b><span class="st-ok">正常</span><span class="dc-s">SKU 7</span></div><div class="dc"><span class="dc-t">SD</span><b>717</b><span class="st-ok">正常</span><span class="dc-s">SKU 4</span></div><div class="dc"><span class="dc-t">硬盘盒</span><span class="na2">未经营</span></div></div>
+      <div class="trend-place" data-dist="华林">📈 库存趋势：待积累历史数据（≥2期显示）</div>
+    </div><div class="distcard">
+      <div class="dc-head"><b>金马士</b><span class="dc-meta">总库存 10,883 · 缺货 0 · 本周销 106</span></div>
+      <div class="dc-grid"><div class="dc"><span class="dc-t">U盘</span><b>10,883</b><span class="st-ok">正常</span><span class="dc-s">SKU 20</span></div><div class="dc"><span class="dc-t">移动硬盘</span><span class="na2">未经营</span></div><div class="dc"><span class="dc-t">TF</span><span class="na2">未经营</span></div><div class="dc"><span class="dc-t">SD</span><span class="na2">未经营</span></div><div class="dc"><span class="dc-t">硬盘盒</span><span class="na2">未经营</span></div></div>
+      <div class="trend-place" data-dist="金马士">📈 库存趋势：待积累历史数据（≥2期显示）</div>
+    </div><div class="distcard">
+      <div class="dc-head"><b>鑫天润</b><span class="dc-meta">总库存 4,484 · 缺货 0 · 本周销 319</span></div>
+      <div class="dc-grid"><div class="dc"><span class="dc-t">U盘</span><b>2,422</b><span class="st-ok">正常</span><span class="dc-s">SKU 19</span></div><div class="dc"><span class="dc-t">移动硬盘</span><b>25</b><span class="st-l">低</span><span class="dc-s">SKU 7</span></div><div class="dc"><span class="dc-t">TF</span><b>1,291</b><span class="st-ok">正常</span><span class="dc-s">SKU 13</span></div><div class="dc"><span class="dc-t">SD</span><b>733</b><span class="st-ok">正常</span><span class="dc-s">SKU 12</span></div><div class="dc"><span class="dc-t">硬盘盒</span><b>13</b><span class="st-l">低</span><span class="dc-s">SKU 2</span></div></div>
+      <div class="trend-place" data-dist="鑫天润">📈 库存趋势：待积累历史数据（≥2期显示）</div>
+    </div><div class="distcard">
+      <div class="dc-head"><b>贵州新正</b><span class="dc-meta">总库存 1,563 · 缺货 0 · 本周销 0</span></div>
+      <div class="dc-grid"><div class="dc"><span class="dc-t">U盘</span><b>950</b><span class="st-ok">正常</span><span class="dc-s">SKU 9</span></div><div class="dc"><span class="dc-t">移动硬盘</span><b>14</b><span class="st-l">低</span><span class="dc-s">SKU 4</span></div><div class="dc"><span class="dc-t">TF</span><b>139</b><span class="st-ok">正常</span><span class="dc-s">SKU 3</span></div><div class="dc"><span class="dc-t">SD</span><b>410</b><span class="st-ok">正常</span><span class="dc-s">SKU 5</span></div><div class="dc"><span class="dc-t">硬盘盒</span><b>50</b><span class="st-ok">正常</span><span class="dc-s">SKU 1</span></div></div>
+      <div class="trend-place" data-dist="贵州新正">📈 库存趋势：待积累历史数据（≥2期显示）</div>
+    </div><div class="distcard">
+      <div class="dc-head"><b>长春瑞拓</b><span class="dc-meta">总库存 5,195 · 缺货 0 · 本周销 0</span></div>
+      <div class="dc-grid"><div class="dc"><span class="dc-t">U盘</span><b>1,903</b><span class="st-ok">正常</span><span class="dc-s">SKU 12</span></div><div class="dc"><span class="dc-t">移动硬盘</span><b>80</b><span class="st-ok">正常</span><span class="dc-s">SKU 7</span></div><div class="dc"><span class="dc-t">TF</span><b>1,940</b><span class="st-ok">正常</span><span class="dc-s">SKU 12</span></div><div class="dc"><span class="dc-t">SD</span><b>1,272</b><span class="st-ok">正常</span><span class="dc-s">SKU 13</span></div><div class="dc"><span class="dc-t">硬盘盒</span><span class="na2">未经营</span></div></div>
+      <div class="trend-place" data-dist="长春瑞拓">📈 库存趋势：待积累历史数据（≥2期显示）</div>
+    </div><div class="distcard">
+      <div class="dc-head"><b>长沙正森</b><span class="dc-meta">总库存 1,903 · 缺货 0 · 本周销 0</span></div>
+      <div class="dc-grid"><div class="dc"><span class="dc-t">U盘</span><b>677</b><span class="st-ok">正常</span><span class="dc-s">SKU 23</span></div><div class="dc"><span class="dc-t">移动硬盘</span><b>5</b><span class="st-l">低</span><span class="dc-s">SKU 3</span></div><div class="dc"><span class="dc-t">TF</span><b>688</b><span class="st-ok">正常</span><span class="dc-s">SKU 14</span></div><div class="dc"><span class="dc-t">SD</span><b>520</b><span class="st-ok">正常</span><span class="dc-s">SKU 14</span></div><div class="dc"><span class="dc-t">硬盘盒</span><b>13</b><span class="st-l">低</span><span class="dc-s">SKU 3</span></div></div>
+      <div class="trend-place" data-dist="长沙正森">📈 库存趋势：待积累历史数据（≥2期显示）</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
