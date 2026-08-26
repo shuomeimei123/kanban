@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>进销存填报 · 塔城科技</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;background:#eef2f6;color:#1f2937;padding-bottom:100px}
+  .header{background:linear-gradient(135deg,#0f3d5c,#1d6fa5);color:#fff;padding:20px 24px;position:sticky;top:0;z-index:50;box-shadow:0 2px 8px rgba(15,61,92,.2)}
+  .header .top{display:flex;justify-content:space-between;align-items:center;max-width:1100px;margin:0 auto}
+  .header h1{font-size:20px}
+  .header .sub{font-size:12px;opacity:.85;margin-top:4px}
+  .header .wk{font-size:13px;background:rgba(255,255,255,.15);padding:5px 10px;border-radius:6px}
+  .tip{max-width:1100px;margin:14px auto 0;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:8px;padding:10px 14px;font-size:13px;line-height:1.6}
+  .wrap{max-width:1100px;margin:0 auto;padding:16px}
+  .group{background:#fff;border-radius:10px;padding:14px 16px;box-shadow:0 1px 3px rgba(0,0,0,.06);margin-bottom:16px}
+  .group-h{font-size:16px;font-weight:700;color:#111827;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+  .g-n{font-size:11px;font-weight:500;color:#6b7280;background:#f0f2f5;padding:2px 8px;border-radius:4px}
+  table{width:100%;border-collapse:collapse}
+  .fill-tbl th,.fill-tbl td{border:1px solid #eef2f7;padding:8px;text-align:center;font-size:13px}
+  .fill-tbl th{background:#f8fafc;color:#374151;font-weight:600}
+  .fill-tbl th small{color:#9ca3af;font-weight:400}
+  .fill-tbl td.sku{text-align:left;font-family:ui-monospace,Consolas,monospace;font-size:12px}
+  .fill-tbl tr.inactive{opacity:.45}
+  .fill-tbl tr.inactive .end-input{display:none}
+  .end-input{width:80px;padding:6px 8px;border:1.5px solid #cbd5e1;border-radius:6px;font-size:14px;text-align:center;font-weight:600;color:#111827}
+  .end-input:focus{outline:none;border-color:#1d6fa5;box-shadow:0 0 0 3px rgba(29,111,165,.15)}
+  .end-input.changed{background:#ecfdf5;border-color:#10b981}
+  td.num{font-variant-numeric:tabular-nums}
+  td.sale{font-weight:600;color:#059669}
+  .add{background:#f8fafc;border:1.5px dashed #cbd5e1;border-radius:10px;padding:14px;text-align:center;cursor:pointer;color:#1d6fa5;font-weight:600;font-size:14px;transition:.15s}
+  .add:hover{background:#eff6ff;border-color:#1d6fa5}
+  .bar{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #e5e7eb;padding:12px 24px;display:flex;justify-content:center;gap:14px;align-items:center;z-index:60;box-shadow:0 -2px 10px rgba(0,0,0,.06)}
+  .bar .stat{font-size:13px;color:#6b7280;margin-right:8px}
+  .btn-save{background:#1d6fa5;color:#fff;border:none;border-radius:8px;padding:12px 34px;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(29,111,165,.3)}
+  .btn-save:hover{background:#164e72}
+  .btn-save:disabled{background:#9ca3af;cursor:not-allowed;box-shadow:none}
+  .toast{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#10b981;color:#fff;padding:10px 24px;border-radius:8px;font-weight:600;box-shadow:0 4px 12px rgba(0,0,0,.2);display:none;z-index:100}
+  .toast.show{display:block;animation:pop .25s}
+  @keyframes pop{from{opacity:0;transform:translateX(-50%) translateY(-6px)}to{opacity:1;transform:translateX(-50%)}}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="top">
+    <div>
+      <h1>📋 进销存填报 · 塔城科技</h1>
+      <div class="sub">每周更新一次即可 · 数据直接同步到公司看板</div>
+    </div>
+    <div class="wk">第35周(2026.08.24-08.30)</div>
+  </div>
+</div>
+
+<div class="tip">💡 <b>本周只需填「本周期末库存」一列</b>：上周库存、本周到货已帮你填好，销量自动算出（= 上周库存 + 到货 − 期末）。库存没变的型号不用动。</div>
+
+<div class="wrap">
+  
+    <div class="group">
+      <div class="group-h">U盘 <span class="g-n">27 个型号 · 10 个在经营</span></div>
+      <table class="fill-tbl">
+        <thead><tr><th>产品型号</th><th>上周库存<br><small>自动</small></th><th>本周到货<br><small>后台已填</small></th><th>本周期末库存<br><small>请填写</small></th><th>销量<br><small>自动算</small></th></tr></thead>
+        <tbody>
+      <tr class="" data-sku="LJDV400032G-BNBNC">
+        <td class="sku">LJDV400032G-BNBNC</td>
+        <td class="num prev">190</td>
+        <td class="num arrive">200</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="190" placeholder="填期末" /></td>
+        <td class="num sale">10</td>
+      </tr>
+      <tr class="" data-sku="LJDV400064G-BNBNC">
+        <td class="sku">LJDV400064G-BNBNC</td>
+        <td class="num prev">290</td>
+        <td class="num arrive">300</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="290" placeholder="填期末" /></td>
+        <td class="num sale">10</td>
+      </tr>
+      <tr class="" data-sku="LJDV400128G-BNBNC">
+        <td class="sku">LJDV400128G-BNBNC</td>
+        <td class="num prev">0</td>
+        <td class="num arrive">20</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="" placeholder="填期末" /></td>
+        <td class="num sale">20</td>
+      </tr>
+      <tr class="inactive" data-sku="LJDV400256G-BNBNC">
+        <td class="sku">LJDV400256G-BNBNC</td>
+        <td class="num prev">0</td>
+        <td class="num arrive">0</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="" placeholder="填期末" /></td>
+        <td class="num sale">0</td>
+      </tr>
+      <tr class="inactive" data-sku="LJDD300032G-BNBNG">
+        <td class="sku">LJDD300032G-BNBNG</td>
+        <td class="num prev">0</td>
+        <td class="num arrive">0</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="" placeholder="填期末" /></td>
+        <td class="num sale">0</td>
+      </tr>
+      <tr class="inactive" data-sku="LJDD300064G-BNBNG">
+        <td class="sku">LJDD300064G-BNBNG</td>
+        <td class="num prev">0</td>
+        <td class="num arrive">0</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="" placeholder="填期末" /></td>
+        <td class="num sale">0</td>
+      </tr>
+      <tr class="inactive" data-sku="LJDD300128G-BNBNG">
+        <td class="sku">LJDD300128G-BNBNG</td>
+        <td class="num prev">0</td>
+        <td class="num arrive">0</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="" placeholder="填期末" /></td>
+        <td class="num sale">0</td>
+      </tr>
+      <tr class="inactive" data-sku="LJDD300256G-BNBNG">
+        <td class="sku">LJDD300256G-BNBNG</td>
+        <td class="num prev">0</td>
+        <td class="num arrive">0</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="" placeholder="填期末" /></td>
+        <td class="num sale">0</td>
+      </tr>
+      <tr class="" data-sku="LJDD400032G-BNQNC">
+        <td class="sku">LJDD400032G-BNQNC</td>
+        <td class="num prev">75</td>
+        <td class="num arrive">0</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="75" placeholder="填期末" /></td>
+        <td class="num sale">0</td>
+      </tr>
+      <tr class="" data-sku="LJDD400064G-BNQNC">
+        <td class="sku">LJDD400064G-BNQNC</td>
+        <td class="num prev">180</td>
+        <td class="num arrive">200</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="180" placeholder="填期末" /></td>
+        <td class="num sale">20</td>
+      </tr>
+      <tr class="" data-sku="LJDD400128G-BNQNC">
+        <td class="sku">LJDD400128G-BNQNC</td>
+        <td class="num prev">150</td>
+        <td class="num arrive">200</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="150" placeholder="填期末" /></td>
+        <td class="num sale">50</td>
+      </tr>
+      <tr class="" data-sku="LJDD400256G-BNQNC">
+        <td class="sku">LJDD400256G-BNQNC</td>
+        <td class="num prev">20</td>
+        <td class="num arrive">30</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="20" placeholder="填期末" /></td>
+        <td class="num sale">10</td>
+      </tr>
+      <tr class="inactive" data-sku="LJDM400032G-BNBNC">
+        <td class="sku">LJDM400032G-BNBNC</td>
+        <td class="num prev">0</td>
+        <td class="num arrive">0</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="" placeholder="填期末" /></td>
+        <td class="num sale">0</td>
+      </tr>
+      <tr class="inactive" data-sku="LJDM400064G-BNBNC">
+        <td class="sku">LJDM400064G-BNBNC</td>
+        <td class="num prev">0</td>
+        <td class="num arrive">0</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="" placeholder="填期末" /></td>
+        <td class="num sale">0</td>
+      </tr>
+      <tr class="inactive" data-sku="LJDM400128G-BNBNC">
+        <td class="sku">LJDM400128G-BNBNC</td>
+        <td class="num prev">0</td>
+        <td class="num arrive">0</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="" placeholder="填期末" /></td>
+        <td class="num sale">0</td>
+      </tr>
+      <tr class="inactive" data-sku="LJDM400256G-BNBNC">
+        <td class="sku">LJDM400256G-BNBNC</td>
+        <td class="num prev">0</td>
+        <td class="num arrive">0</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="" placeholder="填期末" /></td>
+        <td class="num sale">0</td>
+      </tr>
+      <tr class="inactive" data-sku="LJDS080032G-BNBNC">
+        <td class="sku">LJDS080032G-BNBNC</td>
+        <td class="num prev">0</td>
+        <td class="num arrive">0</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="" placeholder="填期末" /></td>
+        <td class="num sale">0</td>
+      </tr>
+      <tr class="inactive" data-sku="LJDS080064G-BNBNC">
+        <td class="sku">LJDS080064G-BNBNC</td>
+        <td class="num prev">0</td>
+        <td class="num arrive">0</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="" placeholder="填期末" /></td>
+        <td class="num sale">0</td>
+      </tr>
+      <tr class="" data-sku="LJDS080128G-BNBNC">
+        <td class="sku">LJDS080128G-BNBNC</td>
+        <td class="num prev">5</td>
+        <td class="num arrive">10</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="5" placeholder="填期末" /></td>
+        <td class="num sale">5</td>
+      </tr>
+      <tr class="inactive" data-sku="LJDS080256G-BNBNC">
+        <td class="sku">LJDS080256G-BNBNC</td>
+        <td class="num prev">0</td>
+        <td class="num arrive">0</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="" placeholder="填期末" /></td>
+        <td class="num sale">0</td>
+      </tr>
+      <tr class="" data-sku="LJDD40T128G-BNSNC">
+        <td class="sku">LJDD40T128G-BNSNC</td>
+        <td class="num prev">10</td>
+        <td class="num arrive">0</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="10" placeholder="填期末" /></td>
+        <td class="num sale">0</td>
+      </tr>
+      <tr class="inactive" data-sku="LJDD40T256G-BNSNC">
+        <td class="sku">LJDD40T256G-BNSNC</td>
+        <td class="num prev">0</td>
+        <td class="num arrive">0</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="" placeholder="填期末" /></td>
+        <td class="num sale">0</td>
+      </tr>
+      <tr class="inactive" data-sku="LJDD500128G-BNXNG AFA版">
+        <td class="sku">LJDD500128G-BNXNG AFA版</td>
+        <td class="num prev">0</td>
+        <td class="num arrive">0</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="" placeholder="填期末" /></td>
+        <td class="num sale">0</td>
+      </tr>
+      <tr class="inactive" data-sku="LJDD500128G-BNQNG">
+        <td class="sku">LJDD500128G-BNQNG</td>
+        <td class="num prev">0</td>
+        <td class="num arrive">0</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="" placeholder="填期末" /></td>
+        <td class="num sale">0</td>
+      </tr>
+      <tr class="inactive" data-sku="LJDD500256G-BNQNG">
+        <td class="sku">LJDD500256G-BNQNG</td>
+        <td class="num prev">0</td>
+        <td class="num arrive">0</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="" placeholder="填期末" /></td>
+        <td class="num sale">0</td>
+      </tr>
+      <tr class="" data-sku="LJDD500512G-BNQNG">
+        <td class="sku">LJDD500512G-BNQNG</td>
+        <td class="num prev">0</td>
+        <td class="num arrive">1</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="" placeholder="填期末" /></td>
+        <td class="num sale">1</td>
+      </tr>
+      <tr class="inactive" data-sku="LJDD500001T-BNQNG">
+        <td class="sku">LJDD500001T-BNQNG</td>
+        <td class="num prev">0</td>
+        <td class="num arrive">0</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="" placeholder="填期末" /></td>
+        <td class="num sale">0</td>
+      </tr></tbody>
+      </table>
+    </div>
+    <div class="group">
+      <div class="group-h">移动硬盘 <span class="g-n">13 个型号 · 0 个在经营</span></div>
+      <table class="fill-tbl">
+        <thead><tr><th>产品型号</th><th>上周库存<br><small>自动</small></th><th>本周到货<br><small>后台已填</small></th><th>本周期末库存<br><small>请填写</small></th><th>销量<br><small>自动算</small></th></tr></thead>
+        <tbody>
+      <tr class="inactive" data-sku="LAR700X001T-RNBNG">
+        <td class="sku">LAR700X001T-RNBNG</td>
+        <td class="num prev">0</td>
+        <td class="num arrive">0</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="" placeholder="填期末" /></td>
+        <td class="num sale">0</td>
+      </tr>
+      <tr class="inactive" data-sku="LAR700X002T-RNBNG">
+        <td class="sku">LAR700X002T-RNBNG</td>
+        <td class="num prev">0</td>
+        <td class="num arrive">0</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="" placeholder="填期末" /></td>
+        <td class="num sale">0</td>
+      </tr>
+      <tr class="inactive" data-sku="LAR700X004T-RNBNG">
+        <td class="sku">LAR700X004T-RNBNG</td>
+        <td class="num prev">0</td>
+        <td class="num arrive">0</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="" placeholder="填期末" /></td>
+        <td class="num sale">0</td>
+      </tr>
+      <tr class="inactive" data-sku="LSL280X512G-RNSNG">
+        <td class="sku">LSL280X512G-RNSNG</td>
+        <td class="num prev">0</td>
+        <td class="num arrive">0</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="" placeholder="填期末" /></td>
+        <td class="num sale">0</td>
+      </tr>
+      <tr class="inactive" data-sku="LSL280X001T-RNSNG">
+        <td class="sku">LSL280X001T-RNSNG</td>
+        <td class="num prev">0</td>
+        <td class="num arrive">0</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="" placeholder="填期末" /></td>
+        <td class="num sale">0</td>
+      </tr>
+      <tr class="inactive" data-sku="LSL300001T-RNBNG">
+        <td class="sku">LSL300001T-RNBNG</td>
+        <td class="num prev">0</td>
+        <td class="num arrive">0</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="" placeholder="填期末" /></td>
+        <td class="num sale">0</td>
+      </tr>
+      <tr class="inactive" data-sku="LSL300002T-RNBNG">
+        <td class="sku">LSL300002T-RNBNG</td>
+        <td class="num prev">0</td>
+        <td class="num arrive">0</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="" placeholder="填期末" /></td>
+        <td class="num sale">0</td>
+      </tr>
+      <tr class="inactive" data-sku="LSL500M001T-RNBNG">
+        <td class="sku">LSL500M001T-RNBNG</td>
+        <td class="num prev">0</td>
+        <td class="num arrive">0</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="" placeholder="填期末" /></td>
+        <td class="num sale">0</td>
+      </tr>
+      <tr class="inactive" data-sku="LSL500M002T-RNBNG">
+        <td class="sku">LSL500M002T-RNBNG</td>
+        <td class="num prev">0</td>
+        <td class="num arrive">0</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="" placeholder="填期末" /></td>
+        <td class="num sale">0</td>
+      </tr>
+      <tr class="inactive" data-sku="LSL500M004T-RNBNG">
+        <td class="sku">LSL500M004T-RNBNG</td>
+        <td class="num prev">0</td>
+        <td class="num arrive">0</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="" placeholder="填期末" /></td>
+        <td class="num sale">0</td>
+      </tr>
+      <tr class="inactive" data-sku="LSL500X001T-RNBNG">
+        <td class="sku">LSL500X001T-RNBNG</td>
+        <td class="num prev">0</td>
+        <td class="num arrive">0</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="" placeholder="填期末" /></td>
+        <td class="num sale">0</td>
+      </tr>
+      <tr class="inactive" data-sku="LSL500X002T-RNBNG">
+        <td class="sku">LSL500X002T-RNBNG</td>
+        <td class="num prev">0</td>
+        <td class="num arrive">0</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="" placeholder="填期末" /></td>
+        <td class="num sale">0</td>
+      </tr>
+      <tr class="inactive" data-sku="LSL500X004T-RNBNG">
+        <td class="sku">LSL500X004T-RNBNG</td>
+        <td class="num prev">0</td>
+        <td class="num arrive">0</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="" placeholder="填期末" /></td>
+        <td class="num sale">0</td>
+      </tr></tbody>
+      </table>
+    </div>
+    <div class="group">
+      <div class="group-h">TF <span class="g-n">14 个型号 · 11 个在经营</span></div>
+      <table class="fill-tbl">
+        <thead><tr><th>产品型号</th><th>上周库存<br><small>自动</small></th><th>本周到货<br><small>后台已填</small></th><th>本周期末库存<br><small>请填写</small></th><th>销量<br><small>自动算</small></th></tr></thead>
+        <tbody>
+      <tr class="" data-sku="LSDMI32GBBCN633N">
+        <td class="sku">LSDMI32GBBCN633N</td>
+        <td class="num prev">1200</td>
+        <td class="num arrive">2400</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="1200" placeholder="填期末" /></td>
+        <td class="num sale">1200</td>
+      </tr>
+      <tr class="" data-sku="LSDMI64GBBCN633N">
+        <td class="sku">LSDMI64GBBCN633N</td>
+        <td class="num prev">1494</td>
+        <td class="num arrive">6900</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="1494" placeholder="填期末" /></td>
+        <td class="num sale">5406</td>
+      </tr>
+      <tr class="" data-sku="LSDMI128BBCN633N">
+        <td class="sku">LSDMI128BBCN633N</td>
+        <td class="num prev">900</td>
+        <td class="num arrive">1000</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="900" placeholder="填期末" /></td>
+        <td class="num sale">100</td>
+      </tr>
+      <tr class="" data-sku="LSDMI256BBCN633N">
+        <td class="sku">LSDMI256BBCN633N</td>
+        <td class="num prev">1000</td>
+        <td class="num arrive">1500</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="1000" placeholder="填期末" /></td>
+        <td class="num sale">500</td>
+      </tr>
+      <tr class="" data-sku="LSDMI512BBCN633A">
+        <td class="sku">LSDMI512BBCN633A</td>
+        <td class="num prev">70</td>
+        <td class="num arrive">0</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="70" placeholder="填期末" /></td>
+        <td class="num sale">0</td>
+      </tr>
+      <tr class="inactive" data-sku="LMSSIPL064G-BNANC">
+        <td class="sku">LMSSIPL064G-BNANC</td>
+        <td class="num prev">0</td>
+        <td class="num arrive">0</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="" placeholder="填期末" /></td>
+        <td class="num sale">0</td>
+      </tr>
+      <tr class="inactive" data-sku="LMSSIPL128G-BNANC">
+        <td class="sku">LMSSIPL128G-BNANC</td>
+        <td class="num prev">0</td>
+        <td class="num arrive">0</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="" placeholder="填期末" /></td>
+        <td class="num sale">0</td>
+      </tr>
+      <tr class="" data-sku="LMSSIPL256G-BNANC">
+        <td class="sku">LMSSIPL256G-BNANC</td>
+        <td class="num prev">580</td>
+        <td class="num arrive">600</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="580" placeholder="填期末" /></td>
+        <td class="num sale">20</td>
+      </tr>
+      <tr class="" data-sku="LMSSIPL512G-BNANC">
+        <td class="sku">LMSSIPL512G-BNANC</td>
+        <td class="num prev">50</td>
+        <td class="num arrive">50</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="50" placeholder="填期末" /></td>
+        <td class="num sale">0</td>
+      </tr>
+      <tr class="" data-sku="LMSSIPL001T-BNANC">
+        <td class="sku">LMSSIPL001T-BNANC</td>
+        <td class="num prev">28</td>
+        <td class="num arrive">30</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="28" placeholder="填期末" /></td>
+        <td class="num sale">2</td>
+      </tr>
+      <tr class="" data-sku="LMSSILV128G-BNANC  200M">
+        <td class="sku">LMSSILV128G-BNANC  200M</td>
+        <td class="num prev">5</td>
+        <td class="num arrive">0</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="5" placeholder="填期末" /></td>
+        <td class="num sale">0</td>
+      </tr>
+      <tr class="inactive" data-sku="LMSXPS0256G-BNNNG">
+        <td class="sku">LMSXPS0256G-BNNNG</td>
+        <td class="num prev">0</td>
+        <td class="num arrive">0</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="" placeholder="填期末" /></td>
+        <td class="num sale">0</td>
+      </tr>
+      <tr class="" data-sku="LMSXPS0512G-BNNNG">
+        <td class="sku">LMSXPS0512G-BNNNG</td>
+        <td class="num prev">18</td>
+        <td class="num arrive">50</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="18" placeholder="填期末" /></td>
+        <td class="num sale">32</td>
+      </tr>
+      <tr class="" data-sku="LMSXPS0001T-BNNNG">
+        <td class="sku">LMSXPS0001T-BNNNG</td>
+        <td class="num prev">0</td>
+        <td class="num arrive">30</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="" placeholder="填期末" /></td>
+        <td class="num sale">30</td>
+      </tr></tbody>
+      </table>
+    </div>
+    <div class="group">
+      <div class="group-h">SD <span class="g-n">14 个型号 · 4 个在经营</span></div>
+      <table class="fill-tbl">
+        <thead><tr><th>产品型号</th><th>上周库存<br><small>自动</small></th><th>本周到货<br><small>后台已填</small></th><th>本周期末库存<br><small>请填写</small></th><th>销量<br><small>自动算</small></th></tr></thead>
+        <tbody>
+      <tr class="" data-sku="LSD0800P032G-BNNNC">
+        <td class="sku">LSD0800P032G-BNNNC</td>
+        <td class="num prev">191</td>
+        <td class="num arrive">0</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="191" placeholder="填期末" /></td>
+        <td class="num sale">0</td>
+      </tr>
+      <tr class="inactive" data-sku="LSD0800P064G-BNNNC">
+        <td class="sku">LSD0800P064G-BNNNC</td>
+        <td class="num prev">0</td>
+        <td class="num arrive">0</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="" placeholder="填期末" /></td>
+        <td class="num sale">0</td>
+      </tr>
+      <tr class="" data-sku="LSD0800P128G-BNNNC">
+        <td class="sku">LSD0800P128G-BNNNC</td>
+        <td class="num prev">190</td>
+        <td class="num arrive">200</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="190" placeholder="填期末" /></td>
+        <td class="num sale">10</td>
+      </tr>
+      <tr class="" data-sku="LSD0800P256G-BNNNC">
+        <td class="sku">LSD0800P256G-BNNNC</td>
+        <td class="num prev">40</td>
+        <td class="num arrive">50</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="40" placeholder="填期末" /></td>
+        <td class="num sale">10</td>
+      </tr>
+      <tr class="inactive" data-sku="LSDSIPL064G-RNNNC">
+        <td class="sku">LSDSIPL064G-RNNNC</td>
+        <td class="num prev">0</td>
+        <td class="num arrive">0</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="" placeholder="填期末" /></td>
+        <td class="num sale">0</td>
+      </tr>
+      <tr class="inactive" data-sku="LSDSIPL128G-RNNNC">
+        <td class="sku">LSDSIPL128G-RNNNC</td>
+        <td class="num prev">0</td>
+        <td class="num arrive">0</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="" placeholder="填期末" /></td>
+        <td class="num sale">0</td>
+      </tr>
+      <tr class="inactive" data-sku="LSDSIPL256G-RNNNC">
+        <td class="sku">LSDSIPL256G-RNNNC</td>
+        <td class="num prev">0</td>
+        <td class="num arrive">0</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="" placeholder="填期末" /></td>
+        <td class="num sale">0</td>
+      </tr>
+      <tr class="inactive" data-sku="LSDSIPL512G-RNNNC">
+        <td class="sku">LSDSIPL512G-RNNNC</td>
+        <td class="num prev">0</td>
+        <td class="num arrive">0</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="" placeholder="填期末" /></td>
+        <td class="num sale">0</td>
+      </tr>
+      <tr class="inactive" data-sku="LSDSIPL001T-BNNNG">
+        <td class="sku">LSDSIPL001T-BNNNG</td>
+        <td class="num prev">0</td>
+        <td class="num arrive">0</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="" placeholder="填期末" /></td>
+        <td class="num sale">0</td>
+      </tr>
+      <tr class="inactive" data-sku="LSD1800064G-RNNNC">
+        <td class="sku">LSD1800064G-RNNNC</td>
+        <td class="num prev">0</td>
+        <td class="num arrive">0</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="" placeholder="填期末" /></td>
+        <td class="num sale">0</td>
+      </tr>
+      <tr class="" data-sku="LSD1800128G-RNNNC">
+        <td class="sku">LSD1800128G-RNNNC</td>
+        <td class="num prev">0</td>
+        <td class="num arrive">1</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="" placeholder="填期末" /></td>
+        <td class="num sale">1</td>
+      </tr>
+      <tr class="inactive" data-sku="LSD1800256G-RNNNC">
+        <td class="sku">LSD1800256G-RNNNC</td>
+        <td class="num prev">0</td>
+        <td class="num arrive">0</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="" placeholder="填期末" /></td>
+        <td class="num sale">0</td>
+      </tr>
+      <tr class="inactive" data-sku="LSD1800512G-RNNNC">
+        <td class="sku">LSD1800512G-RNNNC</td>
+        <td class="num prev">0</td>
+        <td class="num arrive">0</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="" placeholder="填期末" /></td>
+        <td class="num sale">0</td>
+      </tr>
+      <tr class="inactive" data-sku="LSD1800001T-BNNNG">
+        <td class="sku">LSD1800001T-BNNNG</td>
+        <td class="num prev">0</td>
+        <td class="num arrive">0</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="" placeholder="填期末" /></td>
+        <td class="num sale">0</td>
+      </tr></tbody>
+      </table>
+    </div>
+    <div class="group">
+      <div class="group-h">硬盘盒 <span class="g-n">5 个型号 · 2 个在经营</span></div>
+      <table class="fill-tbl">
+        <thead><tr><th>产品型号</th><th>上周库存<br><small>自动</small></th><th>本周到货<br><small>后台已填</small></th><th>本周期末库存<br><small>请填写</small></th><th>销量<br><small>自动算</small></th></tr></thead>
+        <tbody>
+      <tr class="inactive" data-sku="LPAE06N-RNBNG">
+        <td class="sku">LPAE06N-RNBNG</td>
+        <td class="num prev">0</td>
+        <td class="num arrive">0</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="" placeholder="填期末" /></td>
+        <td class="num sale">0</td>
+      </tr>
+      <tr class="inactive" data-sku="LPAE100-RNNNG">
+        <td class="sku">LPAE100-RNNNG</td>
+        <td class="num prev">0</td>
+        <td class="num arrive">0</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="" placeholder="填期末" /></td>
+        <td class="num sale">0</td>
+      </tr>
+      <tr class="inactive" data-sku="LPAE10N-RNBNC">
+        <td class="sku">LPAE10N-RNBNC</td>
+        <td class="num prev">0</td>
+        <td class="num arrive">0</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="" placeholder="填期末" /></td>
+        <td class="num sale">0</td>
+      </tr>
+      <tr class="" data-sku="LPAE300-RNGNC">
+        <td class="sku">LPAE300-RNGNC</td>
+        <td class="num prev">0</td>
+        <td class="num arrive">1000</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="" placeholder="填期末" /></td>
+        <td class="num sale">1000</td>
+      </tr>
+      <tr class="" data-sku="LPAE350-RNGNC">
+        <td class="sku">LPAE350-RNGNC</td>
+        <td class="num prev">11</td>
+        <td class="num arrive">20</td>
+        <td class="num"><input type="number" class="end-input" min="0" value="11" placeholder="填期末" /></td>
+        <td class="num sale">9</td>
+      </tr></tbody>
+      </table>
+    </div>
+  <div class="add" onclick="addRow()">＋ 添加新型号（以后有新型号，点这里加上）</div>
+</div>
+
+<div class="bar">
+  <span class="stat" id="stat">已填 0 项</span>
+  <button class="btn-save" id="saveBtn" onclick="doSave()">保 存</button>
+</div>
+<div class="toast" id="toast">✅ 保存成功，谢谢！</div>
+
+<script>
+// ---- 交互：填期末 -> 自动算销量 ----
+let filled = 0;
+document.querySelectorAll('.end-input').forEach(inp => {
+  inp.addEventListener('input', () => {
+    const tr = inp.closest('tr');
+    const prev = +tr.querySelector('.prev').textContent || 0;
+    const arrive = +tr.querySelector('.arrive').textContent || 0;
+    const end = +inp.value || 0;
+    const sale = Math.max(0, prev + arrive - end);
+    tr.querySelector('.sale').textContent = sale;
+    if (inp.value !== '' && +inp.value !== +(tr.querySelector('.prev').textContent) ) inp.classList.add('changed');
+    // 统计
+    let n = 0;
+    document.querySelectorAll('.end-input').forEach(i => { if (i.value !== '') n++; });
+    filled = n;
+    document.getElementById('stat').textContent = '已填 ' + filled + ' 项';
+  });
+});
+
+// ---- 加号：添加新型号 ----
+function addRow() {
+  const sku = prompt('请输入要添加的产品型号：');
+  if (!sku || !sku.trim()) return;
+  const name = sku.trim();
+  // 找个分组（默认第一个分组），或单独"其他"
+  const firstGroup = document.querySelector('.group');
+  if (!firstGroup) return;
+  let tbody = firstGroup.querySelector('tbody');
+  const tr = document.createElement('tr');
+  tr.setAttribute('data-sku', name);
+  tr.innerHTML = '<td class="sku">' + name.replace(/</g,'&lt;') + '</td><td class="num prev">0</td><td class="num arrive">0</td><td class="num"><input type="number" class="end-input" min="0" placeholder="填期末" /></td><td class="num sale">0</td>';
+  tbody.appendChild(tr);
+  // 重新绑定
+  const inp = tr.querySelector('.end-input');
+  inp.addEventListener('input', recalc);
+  inp.focus();
+  toastMsg('已添加型号：' + name);
+}
+function recalc(e) {
+  const tr = e.target.closest('tr');
+  const prev = +tr.querySelector('.prev').textContent || 0;
+  const arrive = +tr.querySelector('.arrive').textContent || 0;
+  const end = +e.target.value || 0;
+  tr.querySelector('.sale').textContent = Math.max(0, prev + arrive - end);
+  let n = 0; document.querySelectorAll('.end-input').forEach(i => { if (i.value !== '') n++; });
+  document.getElementById('stat').textContent = '已填 ' + n + ' 项';
+}
+
+// ---- 保存 ----
+function doSave() {
+  const rows = [];
+  document.querySelectorAll('tr[data-sku]').forEach(tr => {
+    const sku = tr.getAttribute('data-sku');
+    const end = +tr.querySelector('.end-input')?.value || 0;
+    rows.push({ sku, end });
+  });
+  if (filled === 0) { alert('您还没有填写任何期末库存。请至少填一个型号的本周期末库存。'); return; }
+  // TODO: 这里接入飞书API 把 rows 写入
+  console.log('保存数据:', JSON.stringify({ customer: '塔城科技', week: '第35周(2026.08.24-08.30)', rows }));
+  // 模拟保存成功
+  document.getElementById('saveBtn').disabled = true;
+  document.getElementById('saveBtn').textContent = '保存中…';
+  setTimeout(() => {
+    toastMsg('✅ 保存成功，谢谢！');
+    document.getElementById('saveBtn').disabled = false;
+    document.getElementById('saveBtn').textContent = '保 存';
+  }, 800);
+}
+function toastMsg(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+</script>
+</body>
+</html>
