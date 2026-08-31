@@ -1,0 +1,20 @@
+name: kanban-sync
+on:
+  schedule:
+    - cron: '0 0,12 * * *'
+  workflow_dispatch:
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Sync kanban from Feishu
+        run: node scripts/kanban_sync.mjs
+        env:
+          FEISHU_APP_ID: ${{ secrets.FEISHU_APP_ID }}
+          FEISHU_APP_SECRET: ${{ secrets.FEISHU_APP_SECRET }}
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+          KANBAN_REPO: shuomeimei123/kanban
