@@ -178,13 +178,14 @@ function buildDetails(data) {
 }
 
 function findDetailsBounds(html) {
-  const marker = 'const DETAILS = [';
+  const marker = 'const DETAILS = '; // 不含 [ (detailsJson 带完整外层 [])
   const start = html.indexOf(marker);
   if (start < 0) throw new Error('找不到 const DETAILS');
   const fnIdx = html.indexOf('\nfunction openDetail', start);
   const beforeFn = html.slice(start, fnIdx);
-  const relEnd = beforeFn.lastIndexOf('];');
+  const relEnd = beforeFn.lastIndexOf('];'); // ] 的位置
   if (relEnd < 0) throw new Error('找不到 DETAILS 结束标记');
+  // end 指向 ']' 之后(即 ';' 处), 这样 h.slice(end) 保留 ';'
   return { start, end: start + relEnd + 1, marker };
 }
 function replaceZone(html, zone, newContent, zoneId) {
@@ -282,7 +283,7 @@ async function main() {
   const warnGrid = buildWarnGrid(data);
   const distCards = buildDistCards(data);
   const details = buildDetails(data);
-  const detailsJson = JSON.stringify(details).replace(/</g, '\\u003c').slice(1, -1); // 去掉外层[] (marker const DETAILS = [ 已含 [ )
+  const detailsJson = JSON.stringify(details).replace(/</g, '\\u003c'); // 完整数组 [{...}] (marker 不含 [ )
   const need = details.reduce((s, d) => s + CATS.reduce((x, c) => x + d.per[c].length, 0), 0);
   console.log('需关注型号总数:', need);
 
