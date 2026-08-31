@@ -104,7 +104,7 @@ function buildMatrix(data) {
       else cells += `<td><span class="cell ok" data-key="${key}">${fmt(sum)}</span></td>`;
     }
     const qtyCell = totalQty > 0 ? `<td class="tot red"><b>${totalQty}</b></td>` : '<td class="tot ">—</td>';
-    rows += `<tr><td class="rowhead">${name}</td>${cells}<td class="tot"><b>${fmt(totalStock)}</b></td>${qtyCell}</tr>`;
+    rows += `<tr><td class="rowhead clickable" data-dist="${name}">${name} <i class="wkh">📋</i></td>${cells}<td class="tot"><b>${fmt(totalStock)}</b></td>${qtyCell}</tr>`;
   }
   return rows;
 }
@@ -137,29 +137,24 @@ function buildWarnGrid(data) {
 }
 
 // ③ 各分销商明细 distcard
-function buildDistCards(data) {
-  let html = '';
+function buildDistCards() {
+  // v6: 不再平铺 21 个分销商卡片(太长), 改为一行提示: 点击上方矩阵的分销商名称查看该家完整明细
+  return '<p class="dist-hint" style="padding:16px;color:#6b7280;font-size:14px">👆 点击上方「库存矩阵」表格中的<b>分销商名称</b>（如 塔成科技），即可查看该分销商的完整库存明细（全部型号）。</p>';
+}
+
+// ALLDATA: 每个分销商的全量型号数据(含正常型号), 供点击矩阵行头弹窗展示
+function buildAllData(data) {
+  const out = [];
   for (const name of DIST_NAMES) {
-    const arr = [...data.values()].filter(d => d.dist === name);
-    const totalStock = arr.reduce((s, x) => s + x.stock, 0);
-    const totalHuo = arr.filter(x => x.status === '缺货').length;
-    const totalSale = arr.reduce((s, x) => s + x.sale, 0);
-    let grid = '';
-    for (const c of CATS) {
-      const a = arr.filter(x => x.cat === c);
-      if (a.length === 0) { grid += `<div class="dc"><span class="dc-t">${c}</span><span class="na2">未经营</span></div>`; continue; }
-      const sum = a.reduce((s, x) => s + x.stock, 0);
-      const qHuo = a.filter(x => x.status === '缺货').length;
-      const st = qHuo > 0 ? `<span class="st-0">缺${qHuo}</span>` : '';
-      grid += `<div class="dc"><span class="dc-t">${c}</span><b>${fmt(sum)}</b>${st}<span class="dc-s">SKU ${a.length}</span></div>`;
+    const cats = {};
+    for (const cat of CATS) {
+      const arr = [...data.values()].filter(d => d.dist === name && d.cat === cat)
+        .sort((a, b) => rank(a.status) - rank(b.status) || ((a.weeks ?? 999) - (b.weeks ?? 999)));
+      cats[cat] = arr.map(x => ({ sku: x.sku, stock: x.stock, sale: x.sale, weeks: x.weeks, status: x.status }));
     }
-    html += `<div class="distcard">
-      <div class="dc-head"><b>${name}</b><span class="dc-meta">总库存 ${fmt(totalStock)} · 缺货 ${totalHuo} · 本周销 ${fmt(totalSale)}</span></div>
-      <div class="dc-grid">${grid}</div>
-      <div class="trend-place" data-dist="${name}">📈 库存趋势：待积累历史数据（≥2期显示）</div>
-    </div>`;
+    out.push({ name, cats });
   }
-  return html;
+  return out;
 }
 
 // ④ DETAILS
@@ -200,7 +195,7 @@ function replaceZone(html, zone, newContent, zoneId) {
   return html.slice(0, s + zone.startMark.length) + newContent + html.slice(e);
 }
 
-function rebuild(html, matrixRows, warnGrid, distCards, detailsJson) {
+function rebuild(html, matrixRows, warnGrid, distHint, detailsJson, allDataJson, openDistJs) {
   // ① 矩阵 tbody: <tbody> ... </tbody>
   const tbS = html.indexOf('<tbody>');
   const tbE = html.indexOf('</tbody>', tbS);
@@ -222,30 +217,78 @@ function rebuild(html, matrixRows, warnGrid, distCards, detailsJson) {
   // ③ 各分销商明细: <div class="distcard"> ... 最后一个 </div>(其后是 box 结束或 script)
   // distcard 容器: <div class="dist-card-wrap"> 或直接? 之前看到 每card 后是 '</div>' 结束 box
   // distcards 起始 = 第一个 <div class="distcard">, 结束 = 最后一个 </div> (在 DETAILS 前)
-  const dcEmpty = '<div class="cata-list"></div>'; // noop
-  void dcEmpty;
   const DETAILS_MARK = 'const DETAILS = [';
   const dsStart = h.indexOf(DETAILS_MARK);
-  const segment = h.slice(cgEnd, dsStart); // 含 各分销商明细 box
-  // 在该 segment 中, distcards 从第一个 <div class="distcard"> 开始, 到最后一个 '</div>\n    </div>' (box 闭合) 
-  const dFirst = segment.indexOf('<div class="distcard">');
-  // box 闭合: box 内最后一个 '</div>' 是 distcard 容器结束; 找 '</div>\n  </div>\n\n  <div class="box"' 模式太脆弱
-  // 简化: distcards 结束于 DETAILS 前的 '</div>' 序列; 我们用 最后一个 '</div>' (在 DETAILS 前)
   const segBefore = h.slice(0, dsStart);
-  // ⚠️ distcard 区结束必须止于「下钻弹窗」HTML注释之前(保留 modal 结构!)
-  // 注意「下钻弹窗」出现多次(CSS注释 /*下钻弹窗*/ 在2807 + HTML注释 <!--下钻弹窗--> 在modal前), 必须用最后一次 lastIndexOf
-  const modalComment = segBefore.lastIndexOf('下钻弹窗');
+  // ③ 各分销商明细: 整个 box 替换为提示(不再平铺21卡片). box 边界: 从 '各分销商明细' 所在 <div class="box"> 到「下钻弹窗」注释前
+  const modalComment = segBefore.lastIndexOf('下钻弹窗'); // 注意 CSS注释也有「下钻弹窗」, 取最后一次(HTML注释, modal前)
   if (modalComment < 0) throw new Error('找不到「下钻弹窗」注释锚点');
-  const lastDiv = segBefore.lastIndexOf('</div>', modalComment);
+  const lastDiv = segBefore.lastIndexOf('</div>', modalComment); // 各分销商明细 box 的闭合
   const dcEnd = lastDiv + '</div>'.length;
-  const dcContentStart = segBefore.indexOf('<div class="distcard">');
-  if (dcContentStart < 0) throw new Error('找不到 distcard');
-  h = h.slice(0, dcContentStart) + distCards + h.slice(dcEnd);
+  // box 起始: '各分销商明细' 所在 box 的 <div class="box"> (向前找最近的 <div class="box">)
+  const brand = segBefore.lastIndexOf('各分销商明细');
+  const boxStart = segBefore.lastIndexOf('<div class="box">', brand);
+  if (boxStart < 0) throw new Error('找不到各分销商明细 box');
+  // 替换 boxStart..dcEnd 为: 新的精简提示 box (保留外层 <div class="box"> 结构)
+  const newBox = `<div class="box">
+    <h2>🏢 各分销商明细 <span class="tag">点击上方矩阵分销商名称查看该家全部型号</span></h2>
+    ${distHint}
+  </div>`;
+  h = h.slice(0, boxStart) + newBox + h.slice(dcEnd);
 
-  // ④ DETAILS
+  // ④ 插入 ALLDATA(全量型号) + ⑤ 追加 openDist JS: 放在 DETAILS 之前
+  const ALLDATA_MARK = 'const DETAILS = ';
+  const adStart = h.indexOf(ALLDATA_MARK);
+  if (adStart < 0) throw new Error('找不到 DETAILS');
+  h = h.slice(0, adStart) + 'const ALLDATA = ' + allDataJson + ';\n' + h.slice(adStart);
+
+  // ⑥ DETAILS
   const db = findDetailsBounds(h);
   h = h.slice(0, db.start + db.marker.length) + detailsJson + h.slice(db.end);
+
+  // ⑦ 在 </script> 前追加 openDist 函数 + 行头绑定
+  const scriptEnd = h.lastIndexOf('</script>');
+  if (scriptEnd < 0) throw new Error('找不到 </script>');
+  h = h.slice(0, scriptEnd) + openDistJs + h.slice(scriptEnd);
+
+  // ⑧ 追加 CSS: 行头可点击 + 分销商明细弹窗样式
+  const styleEnd = h.lastIndexOf('</style>');
+  if (styleEnd < 0) throw new Error('找不到 </style>');
+  const extraCss = `
+<style>
+.rowhead.clickable{cursor:pointer;position:relative}
+.rowhead.clickable:hover{background:#eff6ff}
+.wkh{font-style:normal;font-size:10px;margin-left:3px;color:#2563eb}
+.dist-cat-h{font-weight:700;margin:12px 0 4px;padding-bottom:4px;border-bottom:1px solid #e5e7eb;color:#1f2937;font-size:14px}
+.m-empty.dim{color:#9ca3af}
+</style>`;
+  h = h.slice(0, styleEnd) + extraCss + h.slice(styleEnd);
   return h;
+}
+
+// 页面 JS: 点击矩阵行头分销商名 -> 弹出该分销商完整明细(全部型号, 按品类分组)
+function buildOpenDistJs() {
+  return `
+function openDist(name){
+  const rec = typeof ALLDATA !== 'undefined' ? ALLDATA.find(d => d.name === name) : null;
+  if(!rec){ document.getElementById('modalTitle').textContent = name + '（无数据）'; document.getElementById('modalBody').innerHTML = '<div class="m-empty">暂无该分销商数据</div>'; document.getElementById('modalMask').classList.add('open'); return; }
+  let html = '';
+  const order = ['U盘','移动硬盘','TF','SD','硬盘盒'];
+  for(const cat of order){
+    const arr = rec.cats[cat] || [];
+    html += '<div class="dist-cat-h">▸ ' + cat + ' <span class="dc-s">共 ' + arr.length + ' 款</span></div>';
+    if(arr.length === 0){ html += '<div class="m-empty dim">未经营</div>'; continue; }
+    html += '<div class="m-row head"><span>产品型号</span><span class="m-num">库存</span><span class="m-num">本周销</span><span class="m-num">可卖</span><span>状态</span></div>';
+    html += arr.map(x => '<div class="m-row"><span class="sku">'+x.sku+'</span><span class="m-num"><b>'+x.stock+'</b></span><span class="m-num">'+(x.sale||'—')+'</span><span class="m-num">'+(x.weeks===null?'—':x.weeks+'周')+'</span><span class="m-st '+x.status+'">'+x.status+'</span></div>').join('');
+  }
+  document.getElementById('modalTitle').textContent = name + ' · 全部型号明细';
+  document.getElementById('modalBody').innerHTML = html;
+  document.getElementById('modalMask').classList.add('open');
+}
+document.querySelectorAll('.rowhead.clickable').forEach(el => {
+  el.addEventListener('click', () => openDist(el.getAttribute('data-dist')));
+});
+`;
 }
 
 async function ghGet(path, ref) {
@@ -281,13 +324,16 @@ async function main() {
 
   const matrixRows = buildMatrix(data);
   const warnGrid = buildWarnGrid(data);
-  const distCards = buildDistCards(data);
+  const distHint = buildDistCards(); // 不再平铺, 返回提示文案
+  const allData = buildAllData(data);
+  const allDataJson = JSON.stringify(allData).replace(/</g, '\\u003c');
+  const openDistJs = buildOpenDistJs();
   const details = buildDetails(data);
   const detailsJson = JSON.stringify(details).replace(/</g, '\\u003c'); // 完整数组 [{...}] (marker 不含 [ )
   const need = details.reduce((s, d) => s + CATS.reduce((x, c) => x + d.per[c].length, 0), 0);
   console.log('需关注型号总数:', need);
 
-  const newHtml = rebuild(html, matrixRows, warnGrid, distCards, detailsJson);
+  const newHtml = rebuild(html, matrixRows, warnGrid, distHint, detailsJson, allDataJson, openDistJs);
   console.log('新 index.html 长度:', newHtml.length, '(原', html.length, ')');
   if (process.env.WRITE_LOCAL) writeFileSync(process.env.WRITE_LOCAL, newHtml);
   if (process.env.DRY_RUN) { console.log('DRY_RUN: 不推送'); return; }
