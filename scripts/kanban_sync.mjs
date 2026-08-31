@@ -231,7 +231,11 @@ function rebuild(html, matrixRows, warnGrid, distCards, detailsJson) {
   // box 闭合: box 内最后一个 '</div>' 是 distcard 容器结束; 找 '</div>\n  </div>\n\n  <div class="box"' 模式太脆弱
   // 简化: distcards 结束于 DETAILS 前的 '</div>' 序列; 我们用 最后一个 '</div>' (在 DETAILS 前)
   const segBefore = h.slice(0, dsStart);
-  const lastDiv = segBefore.lastIndexOf('</div>');
+  // ⚠️ distcard 区结束必须止于「下钻弹窗」HTML注释之前(保留 modal 结构!)
+  // 注意「下钻弹窗」出现多次(CSS注释 /*下钻弹窗*/ 在2807 + HTML注释 <!--下钻弹窗--> 在modal前), 必须用最后一次 lastIndexOf
+  const modalComment = segBefore.lastIndexOf('下钻弹窗');
+  if (modalComment < 0) throw new Error('找不到「下钻弹窗」注释锚点');
+  const lastDiv = segBefore.lastIndexOf('</div>', modalComment);
   const dcEnd = lastDiv + '</div>'.length;
   const dcContentStart = segBefore.indexOf('<div class="distcard">');
   if (dcContentStart < 0) throw new Error('找不到 distcard');
@@ -243,8 +247,9 @@ function rebuild(html, matrixRows, warnGrid, distCards, detailsJson) {
   return h;
 }
 
-async function ghGet(path) {
-  const r = await req('api.github.com', `/repos/${REPO}/contents/${path}`, 'GET', { Authorization: 'token ' + GH_TOKEN, 'User-Agent': 'clawd', 'Accept': 'application/vnd.github+json' });
+async function ghGet(path, ref) {
+  const qs = ref ? '?ref=' + encodeURIComponent(ref) : '';
+  const r = await req('api.github.com', `/repos/${REPO}/contents/${path}${qs}`, 'GET', { Authorization: 'token ' + GH_TOKEN, 'User-Agent': 'clawd', 'Accept': 'application/vnd.github+json' });
   if (!r.json.content) throw new Error('gh get fail ' + path);
   return { sha: r.json.sha, content: Buffer.from(r.json.content, 'base64').toString('utf8') };
 }
@@ -259,8 +264,16 @@ async function main() {
   const tok = await fsToken();
   const records = await fetchFeishu(tok);
   console.log('飞书记录数:', records.length);
-  const gh = await ghGet('index.html');
-  const html = gh.content;
+  // 基准内容: 若设 BASE_SHA 用该 commit 的 index.html(通常=原始完整版,含 modal); 提交 sha 必须用当前 HEAD
+  const ghHead = await ghGet('index.html');
+  let html;
+  if (process.env.BASE_SHA) {
+    const ghBase = await ghGet('index.html', process.env.BASE_SHA);
+    html = ghBase.content;
+    console.log('基准 index.html 取 base', process.env.BASE_SHA.slice(0,8), '长度', html.length, '; HEAD sha', ghHead.sha.slice(0,8));
+  } else {
+    html = ghHead.content;
+  }
 
   const data = buildData(records);
   console.log('聚合型号数:', data.size);
@@ -269,7 +282,7 @@ async function main() {
   const warnGrid = buildWarnGrid(data);
   const distCards = buildDistCards(data);
   const details = buildDetails(data);
-  const detailsJson = JSON.stringify(details).replace(/</g, '\\u003c');
+  const detailsJson = JSON.stringify(details).replace(/</g, '\\u003c').slice(1, -1); // 去掉外层[] (marker const DETAILS = [ 已含 [ )
   const need = details.reduce((s, d) => s + CATS.reduce((x, c) => x + d.per[c].length, 0), 0);
   console.log('需关注型号总数:', need);
 
@@ -278,7 +291,7 @@ async function main() {
   if (process.env.WRITE_LOCAL) writeFileSync(process.env.WRITE_LOCAL, newHtml);
   if (process.env.DRY_RUN) { console.log('DRY_RUN: 不推送'); return; }
 
-  const commit = await ghPut('index.html', newHtml, gh.sha, `同步分销商库存看板 ${new Date().toISOString().slice(0,16)}`);
+  const commit = await ghPut('index.html', newHtml, ghHead.sha, `同步分销商库存看板 ${new Date().toISOString().slice(0,16)}`);
   console.log('推送成功:', commit.sha.slice(0, 8));
 }
 
