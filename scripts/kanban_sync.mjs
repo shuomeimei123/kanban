@@ -60,11 +60,16 @@ function fmt(n) {
 // 聚合: 分销商|型号|品类 -> {dist,sku,cat,stock,sale,weeks,status}
 function buildData(records) {
   const map = new Map();
+  // 分销商名归一化：门户老账号曾叫「塔城科技」，统一归并到「塔成科技」
+  const ALIAS = { '塔城科技': '塔成科技' };
   for (const r of records) {
     const f = r.fields || {};
-    const dist = t(f['分销商']), sku = t(f['产品型号']), cat = t(f['品类']);
-    if (!dist || !sku || !CATS.includes(cat)) continue;
+    const rawDist = t(f['分销商']), sku = t(f['产品型号']), cat = t(f['品类']);
+    if (!rawDist || !sku || !CATS.includes(cat)) continue;
+    const dist = ALIAS[rawDist] || rawDist;
     const key = dist + '|' + sku + '|' + cat;
+    // 优先取「塔成科技」（新名）：若 key 已被塔成记录占用，则忽略归并进来的「塔城科技」来源记录
+    if (map.has(key) && rawDist === '塔城科技') continue;
     const stock = num(f['库存']), sale = num(f['销量']);
     let weeks = null, status;
     if (sale > 0) {
@@ -108,7 +113,7 @@ function buildMatrix(data) {
 function buildWarnGrid(data) {
   let html = '';
   for (const c of CATS) {
-    const arr = [...data.values()].filter(d => d.cat === c && d.status !== '正常')
+    const arr = [...data.values()].filter(d => d.cat === c && d.status !== '正常' && DIST_NAMES.includes(d.dist))
       .sort((x, y) => rank(x.status) - rank(y.status) || ((x.weeks ?? 999) - (y.weeks ?? 999)));
     const qHuo = arr.filter(x => x.status === '缺货').length;
     const qJing = arr.filter(x => x.status === '库存低' || x.status === '偏低').length;
