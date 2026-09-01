@@ -358,6 +358,26 @@ async function main() {
   const need = details.reduce((s, d) => s + CATS.reduce((x, c) => x + d.per[c].length, 0), 0);
   console.log('需关注型号总数:', need);
 
+  // ⏱ 在 header 的 .meta 区末尾追加"上次更新"时间(北京时间, 精确到时分), 便于判断数据是否更新
+  const cst = new Date(Date.now() + 8 * 3600 * 1000);
+  const pad = n => String(n).padStart(2, '0');
+  const cstStr = `${cst.getUTCFullYear()}-${pad(cst.getUTCMonth() + 1)}-${pad(cst.getUTCDate())} ${pad(cst.getUTCHours())}:${pad(cst.getUTCMinutes())}`;
+  if (html.includes('class="meta"')) {
+    // 若已有"上次更新"行则先移除旧行, 避免累积
+    html = html.replace(/<br><span style="color:#ffd166[^>]*>⏱ 上次更新[^<]*<\/span>/g, '');
+    // 在 </div> 前(meta 闭合前)插入时间行。找 .meta 的结束 </div>: 用最近一次 </div>
+    const mi = html.indexOf('class="meta"');
+    const mDivEnd = html.indexOf('</div>', mi);
+    if (mDivEnd > 0) {
+      html = html.slice(0, mDivEnd) + `<br><span style="color:#ffd166;font-weight:700">⏱ 上次更新 ${cstStr}</span>` + html.slice(mDivEnd);
+      console.log('已写入上次更新时间:', cstStr);
+    } else {
+      console.log('警告: 未定位到 meta 闭合, 跳过更新时间写入');
+    }
+  } else {
+    console.log('警告: 未找到 .meta 区, 跳过更新时间写入');
+  }
+
   const newHtml = rebuild(html, matrixRows, warnGrid, distHint, detailsJson, allDataJson, openDistJs);
   console.log('新 index.html 长度:', newHtml.length, '(原', html.length, ')');
   if (process.env.WRITE_LOCAL) writeFileSync(process.env.WRITE_LOCAL, newHtml);
