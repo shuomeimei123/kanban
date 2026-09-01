@@ -237,10 +237,35 @@ function rebuild(html, matrixRows, warnGrid, distHint, detailsJson, allDataJson,
   h = h.slice(0, boxStart) + newBox + h.slice(dcEnd);
 
   // ④ 插入 ALLDATA(全量型号) + ⑤ 追加 openDist JS: 放在 DETAILS 之前
+  // ⚠️ 修复(2026-09-01): 必须先删除 DETAILS 前所有已存在的 const ALLDATA 声明，
+  //    否则每次 rebuild 都会残留旧 ALLDATA，累积成多份相同 const 声明 → 语法错误 → 整个 script 挂掉(弹窗全失效)
   const ALLDATA_MARK = 'const DETAILS = ';
   const adStart = h.indexOf(ALLDATA_MARK);
   if (adStart < 0) throw new Error('找不到 DETAILS');
-  h = h.slice(0, adStart) + 'const ALLDATA = ' + allDataJson + ';\n' + h.slice(adStart);
+  // 删除 DETAILS 之前的所有 const ALLDATA = [...]; 块（用括号计数精确找数组闭合，防止累积多份）
+  const beforeDetails = h.slice(0, adStart);
+  // 用括号匹配删除所有 const ALLDATA = [...] 块
+  function stripAllData(seg) {
+    let out = ''; let i = 0;
+    while (i < seg.length) {
+      const m = /const ALLDATA = \[/.exec(seg.slice(i));
+      if (!m) { out += seg.slice(i); break; }
+      out += seg.slice(i, i + m.index); // 保留块前内容
+      let depth = 0; let j = i + m.index + m[0].length - 1; // 定位到 '['
+      const st = j;
+      for (; j < seg.length; j++) {
+        if (seg[j] === '[') depth++;
+        else if (seg[j] === ']') { depth--; if (depth === 0) break; }
+      }
+      // j 指向配对的 ']'，删除到 ']' 后的 ';'(若有)
+      let end = j + 1;
+      if (seg[end] === ';') end++;
+      i = end;
+    }
+    return out;
+  }
+  const cleanedBefore = stripAllData(beforeDetails);
+  h = cleanedBefore + 'const ALLDATA = ' + allDataJson + ';\n' + h.slice(adStart);
 
   // ⑥ DETAILS
   const db = findDetailsBounds(h);
