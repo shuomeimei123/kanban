@@ -9,8 +9,8 @@ const FEISHU_APP_ID = process.env.FEISHU_APP_ID;
 const FEISHU_APP_SECRET = process.env.FEISHU_APP_SECRET;
 const GH_TOKEN = process.env.GH_TOKEN;
 const REPO = process.env.KANBAN_REPO || 'shuomeimei123/kanban';
-const FS_APP = 'AtZKb9C9DaTObjsz7rhcENn7nuf';
-const FS_TABLE = 'tblG621wCpIOlwGZ';
+const FS_APP = 'BTEpbRarUaXw33sgYkScFcB9nWg';
+const FS_TABLE = 'tblHfagNytyojEKb';
 
 const CATS = ['U盘', '移动硬盘', 'TF', 'SD', '硬盘盒'];
 const DIST_NAMES = ['塔成科技','沈阳拓展','沈阳新明天','深圳旺源','多义德','新疆方联','甘肃百恩','河南自营','一路友你','石家庄路加','南京鑫蒙华','合肥易芯邦','成都锦鑫','杭州赛畅','重庆卡德','华林','金马士','鑫天润','贵州新正','长春瑞拓','长沙正森','北京杰坤','北京德强智信','山西众诚联创','上海信希','博诚通','山东展军','呼市铭木','山东快易购','武汉弘丰凯'];
