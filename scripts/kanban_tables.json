@@ -5,13 +5,28 @@
   "lastRollover": "2026-09-17",
   "activeYear": 2026,
   "fixed": {
-    "detail": { "id": "tblHfagNytyojEKb", "name": "分销商库存明细", "note": "门户/save 写入；固定11列" },
-    "archive": { "id": "tblwpSVzj3ZmrD6N", "name": "库存明细归档", "note": "全部历史；固定列" },
-    "summary": { "id": "tblONZQFoJnpBKKz", "name": "分销商库存汇总表", "note": "看板读；每行型号，列=客户·进货/销量/库存；固定列" }
+    "detail": {
+      "id": "tblHfagNytyojEKb",
+      "name": "分销商库存明细",
+      "note": "门户/save 写入；固定11列"
+    },
+    "archive": {
+      "id": "tblwpSVzj3ZmrD6N",
+      "name": "库存明细归档",
+      "note": "全部历史；固定列"
+    },
+    "summary": {
+      "id": "tblkKCY6iLgLT1W6",
+      "name": "分销商库存汇总表",
+      "note": "看板读；每行型号，列=客户·进货/销量/库存；固定列"
+    }
   },
   "wideByYear": {
     "2026": {
-      "periodSummary": { "id": "tblLau2aRkBwm48y", "name": "库存周期汇总表" },
+      "periodSummary": {
+        "id": "tblLau2aRkBwm48y",
+        "name": "库存周期汇总表"
+      },
       "dist": {
         "成都锦鑫": "tbloqrhgIb2JjV5M",
         "重庆卡德": "tblTUnWJX3x3MQCZ",
