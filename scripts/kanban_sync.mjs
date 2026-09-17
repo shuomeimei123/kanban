@@ -3,14 +3,25 @@
 // 重建 4 个数据区: ①主矩阵 tbody ②按品类预警 cat-grid ③各分销商明细 distcard ④const DETAILS(弹窗)
 // 环境变量: FEISHU_APP_ID, FEISHU_APP_SECRET, GH_TOKEN, KANBAN_REPO(可选)
 import https from 'https';
-import { writeFileSync } from 'fs';
+import { writeFileSync, readFileSync, existsSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 
 const FEISHU_APP_ID = process.env.FEISHU_APP_ID;
 const FEISHU_APP_SECRET = process.env.FEISHU_APP_SECRET;
 const GH_TOKEN = process.env.GH_TOKEN;
 const REPO = process.env.KANBAN_REPO || 'shuomeimei123/kanban';
-const FS_APP = 'BTEpbRarUaXw33sgYkScFcB9nWg';
-const FS_TABLE = 'tblHfagNytyojEKb';
+
+// 表ID统一从 kanban_tables.json 读取（单一数据源，年度滚动时只改该文件）
+const __dir = dirname(fileURLToPath(import.meta.url));
+let CFG = null;
+for (const p of [join(__dir, 'kanban_tables.json'), join(__dir, '..', 'kanban', 'scripts', 'kanban_tables.json')]) {
+  if (existsSync(p)) { CFG = JSON.parse(readFileSync(p, 'utf8')); break; }
+}
+if (!CFG) throw new Error('找不到 kanban_tables.json');
+const FS_APP = CFG.app;
+const FS_TABLE = CFG.fixed.detail.id;   // 明细表永不滚动（固定列）
+
 
 const CATS = ['U盘', '移动硬盘', 'TF', 'SD', '硬盘盒'];
 const DIST_NAMES = ['塔成科技','沈阳拓展','沈阳新明天','深圳旺源','多义德','新疆方联','甘肃百恩','河南自营','一路友你','石家庄路加','南京鑫蒙华','合肥易芯邦','成都锦鑫','杭州赛畅','重庆卡德','华林','金马士','鑫天润','贵州新正','长春瑞拓','长沙正森','北京杰坤','北京德强智信','山西众诚联创','上海信希','博诚通','山东展军','呼市铭木','山东快易购','武汉弘丰凯'];
