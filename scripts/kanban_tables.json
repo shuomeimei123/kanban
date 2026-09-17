@@ -1,0 +1,49 @@
+{
+  "_comment": "库存管理文档表ID路由配置（单一数据源）。周期列宽表(库存周期汇总表+30张分销商表)按年滚动：每年新建一套 <name>_<year> 表，otherYear 时脚本在此登记。固定列表(明细/归档/汇总)永不滚动。",
+  "app": "BTEpbRarUaXw33sgYkScFcB9nWg",
+  "url": "https://mcntvhvklbuq.feishu.cn/base/BTEpbRarUaXw33sgYkScFcB9nWg",
+  "lastRollover": "2026-09-17",
+  "activeYear": 2026,
+  "fixed": {
+    "detail": { "id": "tblHfagNytyojEKb", "name": "分销商库存明细", "note": "门户/save 写入；固定11列" },
+    "archive": { "id": "tblwpSVzj3ZmrD6N", "name": "库存明细归档", "note": "全部历史；固定列" },
+    "summary": { "id": "tblONZQFoJnpBKKz", "name": "分销商库存汇总表", "note": "看板读；每行型号，列=客户·进货/销量/库存；固定列" }
+  },
+  "wideByYear": {
+    "2026": {
+      "periodSummary": { "id": "tblLau2aRkBwm48y", "name": "库存周期汇总表" },
+      "dist": {
+        "成都锦鑫": "tbloqrhgIb2JjV5M",
+        "重庆卡德": "tblTUnWJX3x3MQCZ",
+        "多义德": "tblUhzMB69Z8JkMU",
+        "甘肃百恩": "tbl7ZIkRJfdIFHNj",
+        "贵州新正": "tblJ9iOQVa9xgFoq",
+        "杭州赛畅": "tblg7MXVBtc7ba27",
+        "合肥易芯邦": "tbl7478WWI6nSXkv",
+        "河南自营": "tbl0V4EBlkHk9orB",
+        "华林": "tblYnMfKVhLBaS5c",
+        "金马士": "tblNIecAbqUXtMju",
+        "南京鑫蒙华": "tbl6Aot5hOPUeZBd",
+        "山东快易购": "tblEQFUi4YRd5w2c",
+        "山西众诚联创": "tblqH2tFpCPy8oXn",
+        "上海信希": "tblKvlyK9nzbfNCF",
+        "深圳旺源": "tblQfgWHPsBydcPD",
+        "沈阳拓展": "tblcakmx440zbnRo",
+        "沈阳新明天": "tbl05AbzpWHrvsIm",
+        "石家庄路加": "tblFkNqxfNQMqFSJ",
+        "塔成科技": "tbl9fufGuPQXjRIu",
+        "武汉弘丰凯": "tbloPWAJrwa6Fmpl",
+        "新疆方联": "tbl0XIZ5jfcSvr1W",
+        "鑫天润": "tbl74LofTQDPruTn",
+        "一路友你": "tblSqyjc2ZqN6xt9",
+        "长春瑞拓": "tbl4MvlYawtyPvdx",
+        "长沙正森": "tblXBq4kdcPlkomk",
+        "北京杰坤": "tbl32LwTuPkbAbmV",
+        "北京德强": "tblJEFhs57Ry9GKd",
+        "博诚通": "tblBSKm41fhLdGJf",
+        "山东展军": "tbluvFwHImlZmET6",
+        "内蒙古铭木": "tblEhPt1ZiQaan6p"
+      }
+    }
+  }
+}
