@@ -41,7 +41,7 @@ const CHIP_SHOW = 12; // 按品类预警每类默认显示 chip 数
 function req(host, path, method, headers, body) {
   return new Promise((resolve, reject) => {
     const data = body ? (typeof body === 'string' ? body : JSON.stringify(body)) : null;
-    const r = https.request({ host, path, method, headers: { 'Content-Type': 'application/json', ...(headers || {}) }, timeout: 60000 }, res => {
+    const r = https.request({ host, path, method, headers: { 'Content-Type': 'application/json', ...(headers || {}) }, timeout: 30000 }, res => {
       let d = ''; res.on('data', c => d += c); res.on('end', () => {
         let j; try { j = JSON.parse(d); } catch (e) { j = d; }
         resolve({ status: res.statusCode, json: j });
@@ -62,8 +62,16 @@ async function fetchAll(tok, tableId) {
   do {
     page++;
     const qs = pageToken ? '?page_token=' + encodeURIComponent(pageToken) : '';
-    const r = await req('open.feishu.cn', `/open-apis/bitable/v1/apps/${FS_APP}/tables/${tableId}/records/search${qs}`, 'POST', H, { page_size: 500 });
-    if (!r.json.data) throw new Error('飞书 records 失败 table ' + tableId + ' page' + page + ': ' + JSON.stringify(r.json).slice(0, 200));
+    let r = null, lastErr = null;
+    for (let attempt = 0; attempt < 4; attempt++) {
+      try {
+        r = await req('open.feishu.cn', `/open-apis/bitable/v1/apps/${FS_APP}/tables/${tableId}/records/search${qs}`, 'POST', H, { page_size: 500 });
+        if (r && r.json && r.json.data) break;
+        lastErr = new Error('bad resp ' + JSON.stringify(r && r.json).slice(0, 120));
+      } catch (e) { lastErr = e; }
+      await new Promise(rs => setTimeout(rs, 1500 * (attempt + 1)));
+    }
+    if (!r || !r.json || !r.json.data) throw new Error('飞书 records 失败 table ' + tableId + ' page' + page + ': ' + (lastErr && lastErr.message));
     const d = r.json.data;
     items = items.concat(d.items || []);
     pageToken = d.has_more ? d.page_token : '';
@@ -94,6 +102,7 @@ async function buildDataFromWide(tok) {
     let rows = [];
     try { rows = await fetchAll(tok, tableId); } catch (e) { console.log(`  [${di}/${distList.length}] ! 宽表拉取失败 ${name}: ${e.message}`); continue; }
     console.log(`  [${di}/${distList.length}] ${name}: ${rows.length} 行`);
+    await new Promise(rs => setTimeout(rs, 800)); // 防飞书限流（连续 records/search 会被节流卡住）
     // 收集所有 "<period>-库存" 列
     const cols = new Set();
     rows.forEach(r => Object.keys(r.fields || {}).forEach(k => { if (/-库存$/.test(k)) cols.add(k); }));
@@ -455,4 +464,4 @@ async function main() {
   console.log('推送成功:', commit.sha.slice(0, 8));
 }
 
-main().catch(e => { console.error('失败:', e.message); process.exit(1); });
+main().catch(e => { console.error('失败:', e && e.message, e && e.stack); process.exit(1); });
