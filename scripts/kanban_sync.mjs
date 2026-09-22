@@ -21,10 +21,21 @@ for (const p of [join(__dir, 'kanban_tables.json'), join(__dir, '..', 'kanban', 
 if (!CFG) throw new Error('找不到 kanban_tables.json');
 const FS_APP = CFG.app;
 const FS_TABLE = CFG.fixed.detail.id;   // 明细表永不滚动（固定列）
+// ⚠️ 2026-09-22 修复：看板数据源从「明细表」改为「30张分销商宽表」(wideByYear)。
+//   原因：团队实际在宽表填报，明细表只有门户/save零散写入(12家、多数8月底旧数据) → 看板大面积空白。
+const WIDE_DIST = (CFG.wideByYear && CFG.wideByYear[CFG.activeYear] && CFG.wideByYear[CFG.activeYear].dist) || {};
+// 周期列 -> 周次/结束日 映射（与 inv_data.mjs 的 WEEK_MAP 保持一致）
+const WEEK_MAP = {
+  '期初基线': { week: '期初', end: null },
+  '2026.08.24-08.30': { week: '第35周', end: '2026-08-30' },
+  '2026.08.31-09.06': { week: '第36周', end: '2026-09-06' },
+  '2026.09.07-09.13': { week: '第37周', end: '2026-09-13' },
+  '2026.09.14-09.20': { week: '第38周', end: '2026-09-20' },
+};
 
 
 const CATS = ['U盘', '移动硬盘', 'TF', 'SD', '硬盘盒'];
-const DIST_NAMES = ['塔成科技','沈阳拓展','沈阳新明天','深圳旺源','多义德','新疆方联','甘肃百恩','河南自营','一路友你','石家庄路加','南京鑫蒙华','合肥易芯邦','成都锦鑫','杭州赛畅','重庆卡德','华林','金马士','鑫天润','贵州新正','长春瑞拓','长沙正森','北京杰坤','北京德强智信','山西众诚联创','上海信希','博诚通','山东展军','呼市铭木','山东快易购','武汉弘丰凯'];
+const DIST_NAMES = ['塔成科技','沈阳拓展','沈阳新明天','深圳旺源','多义德','新疆方联','甘肃百恩','河南自营','一路友你','石家庄路加','南京鑫蒙华','合肥易芯邦','成都锦鑫','杭州赛畅','重庆卡德','华林','金马士','鑫天润','贵州新正','长春瑞拓','长沙正森','北京杰坤','北京德强','山西众诚联创','上海信希','博诚通','山东展军','内蒙古铭木','山东快易购','武汉弘丰凯'];
 const CHIP_SHOW = 12; // 按品类预警每类默认显示 chip 数
 
 function req(host, path, method, headers, body) {
@@ -45,20 +56,22 @@ async function fsToken() {
   if (!r.json.tenant_access_token) throw new Error('飞书 token 失败: ' + JSON.stringify(r.json));
   return r.json.tenant_access_token;
 }
-async function fetchFeishu(tok) {
+async function fetchAll(tok, tableId) {
   const H = { Authorization: 'Bearer ' + tok };
   let items = [], pageToken = '', page = 0;
   do {
     page++;
     const qs = pageToken ? '?page_token=' + encodeURIComponent(pageToken) : '';
-    const r = await req('open.feishu.cn', `/open-apis/bitable/v1/apps/${FS_APP}/tables/${FS_TABLE}/records/search${qs}`, 'POST', H, { page_size: 500 });
-    if (!r.json.data) throw new Error('飞书 records 失败 page' + page + ': ' + JSON.stringify(r.json).slice(0, 200));
+    const r = await req('open.feishu.cn', `/open-apis/bitable/v1/apps/${FS_APP}/tables/${tableId}/records/search${qs}`, 'POST', H, { page_size: 500 });
+    if (!r.json.data) throw new Error('飞书 records 失败 table ' + tableId + ' page' + page + ': ' + JSON.stringify(r.json).slice(0, 200));
     const d = r.json.data;
     items = items.concat(d.items || []);
     pageToken = d.has_more ? d.page_token : '';
   } while (pageToken);
   return items;
 }
+// 兼容旧调用（明细表）
+async function fetchFeishu(tok) { return fetchAll(tok, FS_TABLE); }
 function t(f) { return Array.isArray(f) ? (f[0] && f[0].text) : f; }
 function num(f) { const v = typeof f === 'number' ? f : parseFloat(f); return isNaN(v) ? 0 : v; }
 function fmt(n) {
@@ -68,8 +81,55 @@ function fmt(n) {
   return d ? iii + '.' + d : iii;
 }
 
+// 聚合(2026-09-22): 从 30 张分销商宽表读取。
+// 每张宽表：一行=产品型号，列=<周期>-到货/销量/库存（含「期初基线」）。
+// 取「最新有数据的周期列」（周期列优先，回退期初基线）→ stock/sale → weeks/status。
+async function buildDataFromWide(tok) {
+  const map = new Map();
+  const distList = Object.keys(WIDE_DIST);
+  let di = 0;
+  for (const name of distList) {
+    di++;
+    const tableId = WIDE_DIST[name];
+    let rows = [];
+    try { rows = await fetchAll(tok, tableId); } catch (e) { console.log(`  [${di}/${distList.length}] ! 宽表拉取失败 ${name}: ${e.message}`); continue; }
+    console.log(`  [${di}/${distList.length}] ${name}: ${rows.length} 行`);
+    // 收集所有 "<period>-库存" 列
+    const cols = new Set();
+    rows.forEach(r => Object.keys(r.fields || {}).forEach(k => { if (/-库存$/.test(k)) cols.add(k); }));
+    const sortKey = c => c.startsWith('期初') ? '' : c.slice(0, 10).replace(/\./g, '');
+    const colArr = [...cols].sort((a, b) => (sortKey(a) < sortKey(b) ? -1 : 1));
+    // 找最新有数据的周期列（数值非0即视为有数据；如全为0/空则回退「期初基线」）
+    const dataCol = (() => {
+      for (let i = colArr.length - 1; i >= 0; i--) {
+        const c = colArr[i];
+        const hasVal = rows.some(r => { const v = r.fields[c]; return typeof v === 'number' && v !== 0; });
+        if (hasVal) return c;
+      }
+      return colArr.find(c => c.startsWith('期初')) || colArr[0] || null;
+    })();
+    if (!dataCol) { console.log('  - 宽表无周期列', name); continue; }
+    const prefix = dataCol.replace(/-库存$/, '');
+    const stockCol = prefix + '-库存', saleCol = prefix + '-销量';
+    for (const r of rows) {
+      const f = r.fields || {};
+      const sku = t(f['产品型号'] || f['型号']); const cat = t(f['品类']);
+      if (!sku || !CATS.includes(cat)) continue;
+      const stock = num(f[stockCol]), sale = num(f[saleCol]);
+      let weeks = null, status;
+      if (sale > 0) {
+        weeks = +(stock / sale).toFixed(1);
+        status = weeks < 1 ? '缺货' : weeks < 2 ? '库存低' : weeks < 4 ? '偏低' : '正常';
+      } else status = stock === 0 ? '缺货' : '正常';
+      const key = name + '|' + sku + '|' + cat;
+      map.set(key, { dist: name, sku, cat, stock, sale, weeks, status });
+    }
+  }
+  return map;
+}
+
 // 聚合: 分销商|型号|品类 -> {dist,sku,cat,stock,sale,weeks,status}
-function buildData(records) {
+function buildDataLegacy(records) { // legacy 明细长表版，未用，保留以防回退
   const map = new Map();
   // 分销商名归一化：门户老账号曾叫「塔城科技」，统一归并到「塔成科技」
   const ALIAS = { '塔城科技': '塔成科技' };
@@ -340,10 +400,10 @@ async function ghPut(path, content, sha, msg) {
 
 async function main() {
   if (!FEISHU_APP_ID || !FEISHU_APP_SECRET || !GH_TOKEN) throw new Error('缺少 env');
-  console.log('拉取飞书长表...');
+  console.log('拉取飞书 30 张分销商宽表...');
   const tok = await fsToken();
-  const records = await fetchFeishu(tok);
-  console.log('飞书记录数:', records.length);
+  const data = await buildDataFromWide(tok);
+  console.log('聚合型号数:', data.size);
   // 基准内容: 若设 BASE_SHA 用该 commit 的 index.html(通常=原始完整版,含 modal); 提交 sha 必须用当前 HEAD
   const ghHead = await ghGet('index.html');
   let html;
@@ -354,9 +414,6 @@ async function main() {
   } else {
     html = ghHead.content;
   }
-
-  const data = buildData(records);
-  console.log('聚合型号数:', data.size);
 
   const matrixRows = buildMatrix(data);
   const warnGrid = buildWarnGrid(data);
