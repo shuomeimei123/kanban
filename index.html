@@ -528,6 +528,13 @@
 .wkh{font-style:normal;font-size:10px;margin-left:3px;color:#2563eb}
 .dist-cat-h{font-weight:700;margin:12px 0 4px;padding-bottom:4px;border-bottom:1px solid #e5e7eb;color:#1f2937;font-size:14px}
 .m-empty.dim{color:#9ca3af}
+</style>
+<style>
+.rowhead.clickable{cursor:pointer;position:relative}
+.rowhead.clickable:hover{background:#eff6ff}
+.wkh{font-style:normal;font-size:10px;margin-left:3px;color:#2563eb}
+.dist-cat-h{font-weight:700;margin:12px 0 4px;padding-bottom:4px;border-bottom:1px solid #e5e7eb;color:#1f2937;font-size:14px}
+.m-empty.dim{color:#9ca3af}
 </style></style>
 </head>
 <body>
@@ -537,7 +544,7 @@
       <h1>21家分销商库存预警看板</h1>
       <div class="sub">缺货/库存低预警 · 按品类分类预警 · 数据周更</div>
     </div>
-    <div class="meta">数据周期：<b>2026.08 本周</b><br>21 家分销商 · 80 型号<br><span style="color:#ffd166;font-weight:700">⏱ 上次更新 2026-09-25 08:20</span></div>
+    <div class="meta">数据周期：<b>2026.08 本周</b><br>21 家分销商 · 80 型号<br><span style="color:#ffd166;font-weight:700">⏱ 上次更新 2026-09-25 20:19</span></div>
   </div>
 
   <div class="cards">
@@ -662,6 +669,7 @@
 
 
 
+
 const ALLDATA = [{"name":"塔成科技","cats":{"U盘":[],"移动硬盘":[],"TF":[],"SD":[],"硬盘盒":[]}},{"name":"沈阳拓展","cats":{"U盘":[],"移动硬盘":[],"TF":[],"SD":[],"硬盘盒":[]}},{"name":"沈阳新明天","cats":{"U盘":[],"移动硬盘":[],"TF":[],"SD":[],"硬盘盒":[]}},{"name":"深圳旺源","cats":{"U盘":[],"移动硬盘":[],"TF":[],"SD":[],"硬盘盒":[]}},{"name":"多义德","cats":{"U盘":[],"移动硬盘":[],"TF":[],"SD":[],"硬盘盒":[]}},{"name":"新疆方联","cats":{"U盘":[],"移动硬盘":[],"TF":[],"SD":[],"硬盘盒":[]}},{"name":"甘肃百恩","cats":{"U盘":[],"移动硬盘":[],"TF":[],"SD":[],"硬盘盒":[]}},{"name":"河南自营","cats":{"U盘":[],"移动硬盘":[],"TF":[],"SD":[],"硬盘盒":[]}},{"name":"一路友你","cats":{"U盘":[],"移动硬盘":[],"TF":[],"SD":[],"硬盘盒":[]}},{"name":"石家庄路加","cats":{"U盘":[],"移动硬盘":[],"TF":[],"SD":[],"硬盘盒":[]}},{"name":"南京鑫蒙华","cats":{"U盘":[],"移动硬盘":[],"TF":[],"SD":[],"硬盘盒":[]}},{"name":"合肥易芯邦","cats":{"U盘":[],"移动硬盘":[],"TF":[],"SD":[],"硬盘盒":[]}},{"name":"成都锦鑫","cats":{"U盘":[],"移动硬盘":[],"TF":[],"SD":[],"硬盘盒":[]}},{"name":"杭州赛畅","cats":{"U盘":[],"移动硬盘":[],"TF":[],"SD":[],"硬盘盒":[]}},{"name":"重庆卡德","cats":{"U盘":[],"移动硬盘":[],"TF":[],"SD":[],"硬盘盒":[]}},{"name":"华林","cats":{"U盘":[],"移动硬盘":[],"TF":[],"SD":[],"硬盘盒":[]}},{"name":"金马士","cats":{"U盘":[],"移动硬盘":[],"TF":[],"SD":[],"硬盘盒":[]}},{"name":"鑫天润","cats":{"U盘":[],"移动硬盘":[],"TF":[],"SD":[],"硬盘盒":[]}},{"name":"贵州新正","cats":{"U盘":[],"移动硬盘":[],"TF":[],"SD":[],"硬盘盒":[]}},{"name":"长春瑞拓","cats":{"U盘":[],"移动硬盘":[],"TF":[],"SD":[],"硬盘盒":[]}},{"name":"长沙正森","cats":{"U盘":[],"移动硬盘":[],"TF":[],"SD":[],"硬盘盒":[]}},{"name":"北京杰坤","cats":{"U盘":[],"移动硬盘":[],"TF":[],"SD":[],"硬盘盒":[]}},{"name":"北京德强","cats":{"U盘":[],"移动硬盘":[],"TF":[],"SD":[],"硬盘盒":[]}},{"name":"山西众诚联创","cats":{"U盘":[],"移动硬盘":[],"TF":[],"SD":[],"硬盘盒":[]}},{"name":"上海信希","cats":{"U盘":[],"移动硬盘":[],"TF":[],"SD":[],"硬盘盒":[]}},{"name":"博诚通","cats":{"U盘":[],"移动硬盘":[],"TF":[],"SD":[],"硬盘盒":[]}},{"name":"山东展军","cats":{"U盘":[],"移动硬盘":[],"TF":[],"SD":[],"硬盘盒":[]}},{"name":"内蒙古铭木","cats":{"U盘":[],"移动硬盘":[],"TF":[],"SD":[],"硬盘盒":[]}},{"name":"山东快易购","cats":{"U盘":[],"移动硬盘":[],"TF":[],"SD":[],"硬盘盒":[]}},{"name":"武汉弘丰凯","cats":{"U盘":[],"移动硬盘":[],"TF":[],"SD":[],"硬盘盒":[]}}];
 const DETAILS = [{"name":"塔成科技","per":{"U盘":[],"移动硬盘":[],"TF":[],"SD":[],"硬盘盒":[]}},{"name":"沈阳拓展","per":{"U盘":[],"移动硬盘":[],"TF":[],"SD":[],"硬盘盒":[]}},{"name":"沈阳新明天","per":{"U盘":[],"移动硬盘":[],"TF":[],"SD":[],"硬盘盒":[]}},{"name":"深圳旺源","per":{"U盘":[],"移动硬盘":[],"TF":[],"SD":[],"硬盘盒":[]}},{"name":"多义德","per":{"U盘":[],"移动硬盘":[],"TF":[],"SD":[],"硬盘盒":[]}},{"name":"新疆方联","per":{"U盘":[],"移动硬盘":[],"TF":[],"SD":[],"硬盘盒":[]}},{"name":"甘肃百恩","per":{"U盘":[],"移动硬盘":[],"TF":[],"SD":[],"硬盘盒":[]}},{"name":"河南自营","per":{"U盘":[],"移动硬盘":[],"TF":[],"SD":[],"硬盘盒":[]}},{"name":"一路友你","per":{"U盘":[],"移动硬盘":[],"TF":[],"SD":[],"硬盘盒":[]}},{"name":"石家庄路加","per":{"U盘":[],"移动硬盘":[],"TF":[],"SD":[],"硬盘盒":[]}},{"name":"南京鑫蒙华","per":{"U盘":[],"移动硬盘":[],"TF":[],"SD":[],"硬盘盒":[]}},{"name":"合肥易芯邦","per":{"U盘":[],"移动硬盘":[],"TF":[],"SD":[],"硬盘盒":[]}},{"name":"成都锦鑫","per":{"U盘":[],"移动硬盘":[],"TF":[],"SD":[],"硬盘盒":[]}},{"name":"杭州赛畅","per":{"U盘":[],"移动硬盘":[],"TF":[],"SD":[],"硬盘盒":[]}},{"name":"重庆卡德","per":{"U盘":[],"移动硬盘":[],"TF":[],"SD":[],"硬盘盒":[]}},{"name":"华林","per":{"U盘":[],"移动硬盘":[],"TF":[],"SD":[],"硬盘盒":[]}},{"name":"金马士","per":{"U盘":[],"移动硬盘":[],"TF":[],"SD":[],"硬盘盒":[]}},{"name":"鑫天润","per":{"U盘":[],"移动硬盘":[],"TF":[],"SD":[],"硬盘盒":[]}},{"name":"贵州新正","per":{"U盘":[],"移动硬盘":[],"TF":[],"SD":[],"硬盘盒":[]}},{"name":"长春瑞拓","per":{"U盘":[],"移动硬盘":[],"TF":[],"SD":[],"硬盘盒":[]}},{"name":"长沙正森","per":{"U盘":[],"移动硬盘":[],"TF":[],"SD":[],"硬盘盒":[]}},{"name":"北京杰坤","per":{"U盘":[],"移动硬盘":[],"TF":[],"SD":[],"硬盘盒":[]}},{"name":"北京德强","per":{"U盘":[],"移动硬盘":[],"TF":[],"SD":[],"硬盘盒":[]}},{"name":"山西众诚联创","per":{"U盘":[],"移动硬盘":[],"TF":[],"SD":[],"硬盘盒":[]}},{"name":"上海信希","per":{"U盘":[],"移动硬盘":[],"TF":[],"SD":[],"硬盘盒":[]}},{"name":"博诚通","per":{"U盘":[],"移动硬盘":[],"TF":[],"SD":[],"硬盘盒":[]}},{"name":"山东展军","per":{"U盘":[],"移动硬盘":[],"TF":[],"SD":[],"硬盘盒":[]}},{"name":"内蒙古铭木","per":{"U盘":[],"移动硬盘":[],"TF":[],"SD":[],"硬盘盒":[]}},{"name":"山东快易购","per":{"U盘":[],"移动硬盘":[],"TF":[],"SD":[],"硬盘盒":[]}},{"name":"武汉弘丰凯","per":{"U盘":[],"移动硬盘":[],"TF":[],"SD":[],"硬盘盒":[]}}];
 function openDetail(key){
@@ -680,6 +688,26 @@ document.querySelectorAll('.cell.clickable').forEach(el => {
   el.addEventListener('click', () => openDetail(el.getAttribute('data-key')));
 });
 document.getElementById('modalMask').addEventListener('click', e => { if (e.target.id === 'modalMask') closeModal(); });
+
+function openDist(name){
+  const rec = typeof ALLDATA !== 'undefined' ? ALLDATA.find(d => d.name === name) : null;
+  if(!rec){ document.getElementById('modalTitle').textContent = name + '（无数据）'; document.getElementById('modalBody').innerHTML = '<div class="m-empty">暂无该分销商数据</div>'; document.getElementById('modalMask').classList.add('open'); return; }
+  let html = '';
+  const order = ['U盘','移动硬盘','TF','SD','硬盘盒'];
+  for(const cat of order){
+    const arr = rec.cats[cat] || [];
+    html += '<div class="dist-cat-h">▸ ' + cat + ' <span class="dc-s">共 ' + arr.length + ' 款</span></div>';
+    if(arr.length === 0){ html += '<div class="m-empty dim">未经营</div>'; continue; }
+    html += '<div class="m-row head"><span>产品型号</span><span class="m-num">库存</span><span class="m-num">本周销</span><span class="m-num">可卖</span><span>状态</span></div>';
+    html += arr.map(x => '<div class="m-row"><span class="sku">'+x.sku+'</span><span class="m-num"><b>'+x.stock+'</b></span><span class="m-num">'+(x.sale||'—')+'</span><span class="m-num">'+(x.weeks===null?'—':x.weeks+'周')+'</span><span class="m-st '+x.status+'">'+x.status+'</span></div>').join('');
+  }
+  document.getElementById('modalTitle').textContent = name + ' · 全部型号明细';
+  document.getElementById('modalBody').innerHTML = html;
+  document.getElementById('modalMask').classList.add('open');
+}
+document.querySelectorAll('.rowhead.clickable').forEach(el => {
+  el.addEventListener('click', () => openDist(el.getAttribute('data-dist')));
+});
 
 function openDist(name){
   const rec = typeof ALLDATA !== 'undefined' ? ALLDATA.find(d => d.name === name) : null;
